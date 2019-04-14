@@ -9,14 +9,35 @@
 #include "include/filesystem.h" // Headers for the core functionality
 #include "include/auxiliary.h"  // Headers for auxiliary functions
 #include "include/metadata.h"   // Type and structure declaration of the file system
+#include <string.h>
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
  * @return 	0 if success, -1 otherwise.
  */
+
+struct superBlock sBlock;
+struct INode inodes;
+char InodeNames [MAX_FILES][MAX_NAME];
+
+
+
 int mkFS(long deviceSize)
 {
-	if (deviceSize >= 51200 || deviceSize <= 10485760) return -1;
+	
+	if (deviceSize < 51200 || deviceSize > 10485760) return -1;
+	
+	sBlock.deviceSize = deviceSize;
+
+	for(unsigned i = 0; i < MAX_FILES; i++){
+		sBlock.iNodos[i].name = InodeNames[i];
+		strcpy(InodeNames[i],"");
+	}
+	
+	if(unmountFS() == -1) return -1;
+
+	return 0;
+
 
 	
 }
@@ -27,7 +48,9 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
-	return -1;
+	if(bread(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
+	if(bwrite(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
+	return 0;
 }
 
 /*
@@ -36,7 +59,9 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
-	return -1;
+	if(bwrite(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
+	if(bwrite(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
+	return 0;
 }
 
 /*
@@ -45,6 +70,9 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
+	for(int i = 0; i < MAX_FILES; i++){
+		if(strcmp(sBlock.iNodos[i].name,path) == 0) return -1; 
+	}
 	return -2;
 }
 

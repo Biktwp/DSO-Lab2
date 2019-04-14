@@ -15,20 +15,29 @@ static inline void bitmap_setbit(char *bitmap_, int i_, int val_) {
 }
 
 
-#define MAX_FILES 40:
-#define MAX_NAME 32;
-#define DEPTH 3;
-#define FILE_SIZE 2048;
-#define BLOCK_SIZE 2048;
+#define MAX_FILES 40
+#define MAX_NAME 32
+#define DEPTH 3
+#define FILE_SIZE 2048
+#define BLOCK_SIZE 2048
 
 struct INode;
 struct superBlock;
 
-typedef struct
+typedef struct INode
 {
   char *name;
-  int size
+  unsigned int sizeFile;
+  unsigned int blockNumber;
+  unsigned int pointer;
 }INode;
+
+typedef struct superBlock
+{
+  unsigned long deviceSize;
+  struct INode iNodos[MAX_FILES];
+}superBlock;
+
 
 
 
