@@ -20,24 +20,24 @@ static inline void bitmap_setbit(char *bitmap_, int i_, int val_) {
 #define DEPTH 3
 #define FILE_SIZE 2048
 #define BLOCK_SIZE 2048
+#define OPEN 1
+#define CLOSE 0
 
 struct INode;
 struct superBlock;
 
 typedef struct INode
 {
-  char *name;
-  unsigned int sizeFile;
-  unsigned int blockNumber;
-  unsigned int pointer;
+  char *name; //File Name
+  unsigned int sizeFile; //File size
+  unsigned int blockNumber; //Block number (ID??)
+  unsigned int pointer; //File pointer 
+  unsigned int open; //Indicate if the file is open or not
+
 }INode;
 
 typedef struct superBlock
 {
-  unsigned long deviceSize;
-  struct INode iNodos[MAX_FILES];
+  unsigned long deviceSize; //Size of th edevice
+  struct INode iNodos[MAX_FILES]; //i-nodes array
 }superBlock;
-
-
-
-

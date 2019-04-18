@@ -24,21 +24,23 @@ char InodeNames [MAX_FILES][MAX_NAME];
 
 int mkFS(long deviceSize)
 {
-	
+	//Check the device size 
 	if (deviceSize < 51200 || deviceSize > 10485760) return -1;
 	
+	//Restore the i-nodes map and the device size is store
 	sBlock.deviceSize = deviceSize;
 
+	//Go through the i-node array and set it as default
 	for(unsigned i = 0; i < MAX_FILES; i++){
 		sBlock.iNodos[i].name = InodeNames[i];
 		strcpy(InodeNames[i],"");
+		sBlock.iNodos[i].open = CLOSE;
 	}
 	
+	//"Break up" the device
 	if(unmountFS() == -1) return -1;
 
 	return 0;
-
-
 	
 }
 
@@ -48,8 +50,9 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
+	//Read the metadata blocks from the disk
 	if(bread(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
-	if(bwrite(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
+	if(bread(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
 	return 0;
 }
 
@@ -59,6 +62,7 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
+	//Write in the device the metadata blocks
 	if(bwrite(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
 	if(bwrite(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
 	return 0;
@@ -91,7 +95,27 @@ int removeFile(char *path)
  */
 int openFile(char *path)
 {
-	return -2;
+	//Get the i-node from the path name
+	int inode_i = namei(path);
+
+	//Check if the file exists
+	if(inode_i < 0){
+		return -1;
+	}
+
+	//Check if the file is already open
+	if(sBlock.iNodos[inode_i].open == OPEN){
+		return -2;
+	}
+
+	//Change the status of the file to OPEN
+	sBlock.iNodos[inode_i].open = OPEN;
+
+	/*
+	¿¿Habria que poner aqui un lseek al begin del file??
+	*/
+
+	return inode_i;
 }
 
 /*
@@ -100,7 +124,20 @@ int openFile(char *path)
  */
 int closeFile(int fileDescriptor)
 {
-	return -1;
+	//Check if the file descriptor is valid
+	if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+		return -1;
+	}
+
+	//Check if the file is already close
+	if(sBlock.iNodos[fileDescriptor].open == CLOSE){
+		return -1;
+	}
+
+	//Close the file
+	sBlock.iNodos[fileDescriptor].open == CLOSE;
+
+	return 0;
 }
 
 /*
@@ -109,7 +146,31 @@ int closeFile(int fileDescriptor)
  */
 int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
-	return -1;
+	//Check if the file descriptor is valid
+	if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+		return -1;
+	}
+	//Checck the file number of bytes
+	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
+		return -1;
+	}
+
+	//Check if the file is open
+	if (sBlock.iNodos[fileDescriptor].open == CLOSE){
+		return -1;
+	}
+
+	/*
+	No pillo de los i-node map
+	*/
+
+	//We create a Char block to read the chacters from the file
+	char block[BLOCK_SIZE];
+	//Get the image from the device and 
+	bread(DEVICE_IMAGE, fileDescriptor, block);
+	memmove(buffer, block, numBytes);
+
+	return numBytes;
 }
 
 /*
@@ -155,4 +216,20 @@ int rmDir(char *path)
 int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 {
 	return -2;
+}
+
+
+/*
+namei: returns the file descriptor of a file from the path name
+*/
+int namei(char *fileName) {
+	int fd;
+	for(fd = 0; fd < MAX_FILES; fd++) {
+		//Loking for the file and retrun the number
+		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
+			return fd;
+		}
+	}
+	//In case it is not found
+	return -1;
 }
