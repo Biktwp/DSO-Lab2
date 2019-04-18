@@ -166,8 +166,9 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 
 	//We create a Char block to read the chacters from the file
 	char block[BLOCK_SIZE];
-	//Get the image from the device and 
+	//Get the image from the device and put the content in the buffer
 	bread(DEVICE_IMAGE, fileDescriptor, block);
+	//Reaf the bytes of the block and put them in the buffer
 	memmove(buffer, block, numBytes);
 
 	return numBytes;
