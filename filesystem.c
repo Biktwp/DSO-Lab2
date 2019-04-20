@@ -180,6 +180,27 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
+	//Check if the file descriptor is valid
+	if (fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+		return -1;
+	}
+
+	//Checck the file number of bytes
+	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
+		return -1;
+	}
+
+	//Check if the file is open
+	if (sBlock.iNodos[fileDescriptor].open == CLOSE){
+		return -1;
+	}
+
+	/*
+	i-node map??
+	*/
+
+	
+
 	return -1;
 }
 
@@ -189,7 +210,28 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int lseekFile(int fileDescriptor, long offset, int whence)
 {
-	return -1;
+	//Check if the file descriptor is valid
+	if (fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+		return -1;
+	}
+
+	//We need to check the whence number
+	//Change the pointer offset possitions from the current one
+	if(whence == FS_SEEK_CUR){
+		if(sBlock.iNodos[fileDescriptor].pointer + offset > MAX_FILES-1 || sBlock.iNodos[fileDescriptor].pointer + offset < 0){
+			return -1;
+		}
+		sBlock.iNodos[fileDescriptor].pointer += offset;
+	}
+	//Change the pointer to the begining of the file
+	if(whence == FS_SEEK_BEGIN){
+		sBlock.iNodos[fileDescriptor].pointer = 0;
+	}
+	//Change the pointer to the end of the file
+	if(whence == FS_SEEK_END){
+		sBlock.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
+	}
+	return 0;
 }
 
 /*
@@ -219,13 +261,15 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 	return -2;
 }
 
+/*
+OUR FUNCTIONS
+*/
 
 /*
 namei: returns the file descriptor of a file from the path name
 */
 int namei(char *fileName) {
-	int fd;
-	for(fd = 0; fd < MAX_FILES; fd++) {
+	for(int fd = 0; fd < MAX_FILES; fd++) {
 		//Loking for the file and retrun the number
 		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
 			return fd;
