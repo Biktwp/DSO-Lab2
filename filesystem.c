@@ -11,16 +11,14 @@
 #include "include/metadata.h"   // Type and structure declaration of the file system
 #include <string.h>
 
+struct superBlock sBlock;
+struct INode inodes;
+char InodeNames [MAX_TOTAL_FILES][MAX_NAME];
+
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
  * @return 	0 if success, -1 otherwise.
  */
-
-struct superBlock sBlock;
-struct INode inodes;
-char InodeNames [MAX_FILES][MAX_NAME];
-
-
 
 int mkFS(long deviceSize)
 {
@@ -31,13 +29,13 @@ int mkFS(long deviceSize)
 	sBlock.deviceSize = deviceSize;
 
 	//Go through the i-node array and set it as default
-	for(unsigned i = 0; i < MAX_FILES; i++){
-		sBlock.iNodos[i].name = InodeNames[i];
+	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
 		strcpy(InodeNames[i],"");
+		strcpy(sBlock.iNodos[i].name, InodeNames[i]);
 		sBlock.iNodos[i].open = CLOSE;
 	}
 	
-	//"Break up" the device
+	//Write metadata in disk
 	if(unmountFS() == -1) return -1;
 
 	return 0;
@@ -74,9 +72,20 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
-	for(int i = 0; i < MAX_FILES; i++){
+	//Check if the file already exists
+	/*for(int i = 0; i < MAX_TOTAL_FILES; i++){
 		if(strcmp(sBlock.iNodos[i].name,path) == 0) return -1; 
 	}
+	*/
+
+	//Check if the path has a correct format
+	if(path == NULL || path == "" || path[0] != 77){
+		return -2;
+	}
+
+	char *check; //Store the name of each directory in the path and the file
+	//strtok();
+
 	return -2;
 }
 
@@ -89,7 +98,7 @@ int removeFile(char *path)
 	return -2;
 }
 
-/*
+/*Break up" the device
  * @brief	Opens an existing file.
  * @return	The file descriptor if possible, -1 if file does not exist, -2 in case of error..
  */
@@ -99,9 +108,11 @@ int openFile(char *path)
 	int inode_i = namei(path);
 
 	//Check if the file exists
-	if(inode_i < 0){
+	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
 		return -1;
 	}
+
+
 
 	//Check if the file is already open
 	if(sBlock.iNodos[inode_i].open == OPEN){
@@ -113,6 +124,10 @@ int openFile(char *path)
 
 	/*
 	¿¿Habria que poner aqui un lseek al begin del file??
+
+	if(lseekFile(inode_i, 0, FS_SEEK_BEGIN)<0){
+		return -1;
+	}
 	*/
 
 	return inode_i;
@@ -125,7 +140,7 @@ int openFile(char *path)
 int closeFile(int fileDescriptor)
 {
 	//Check if the file descriptor is valid
-	if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+	if(fileDescriptor < 0 || fileDescriptor > MAX_LOCAL_FILES-1){
 		return -1;
 	}
 
@@ -147,7 +162,7 @@ int closeFile(int fileDescriptor)
 int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
 	//Check if the file descriptor is valid
-	if(fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
 	}
 	//Checck the file number of bytes
@@ -181,7 +196,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
 	//Check if the file descriptor is valid
-	if (fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
 	}
 
@@ -211,25 +226,36 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 int lseekFile(int fileDescriptor, long offset, int whence)
 {
 	//Check if the file descriptor is valid
-	if (fileDescriptor < 0 || fileDescriptor > MAX_FILES-1){
+	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		return -1;
+	}
+	if(offset > MAX_FILE_SIZE-1){
 		return -1;
 	}
 
 	//We need to check the whence number
 	//Change the pointer offset possitions from the current one
 	if(whence == FS_SEEK_CUR){
-		if(sBlock.iNodos[fileDescriptor].pointer + offset > MAX_FILES-1 || sBlock.iNodos[fileDescriptor].pointer + offset < 0){
+		if(sBlock.iNodos[fileDescriptor].pointer + offset > MAX_FILE_SIZE-1 || sBlock.iNodos[fileDescriptor].pointer + offset < 0){
 			return -1;
 		}
 		sBlock.iNodos[fileDescriptor].pointer += offset;
 	}
 	//Change the pointer to the begining of the file
 	if(whence == FS_SEEK_BEGIN){
-		sBlock.iNodos[fileDescriptor].pointer = 0;
+		//In case the offset is neggative, you cannot go less than 0 in a file
+		if(offset<0){
+			return -1;
+		}
+		sBlock.iNodos[fileDescriptor].pointer = 0 + offset;
 	}
 	//Change the pointer to the end of the file
 	if(whence == FS_SEEK_END){
-		sBlock.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
+		//In case offset is possitive, you cannot go to the next document in a file
+		if(offset>0){
+			return -1;
+		}
+		sBlock.iNodos[fileDescriptor].pointer = (MAX_FILE_SIZE-1) + offset;
 	}
 	return 0;
 }
@@ -269,7 +295,7 @@ OUR FUNCTIONS
 namei: returns the file descriptor of a file from the path name
 */
 int namei(char *fileName) {
-	for(int fd = 0; fd < MAX_FILES; fd++) {
+	for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
 		//Loking for the file and retrun the number
 		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
 			return fd;
