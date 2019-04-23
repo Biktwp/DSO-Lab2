@@ -83,8 +83,40 @@ int createFile(char *path)
 		return -2;
 	}
 
-	char *check; //Store the name of each directory in the path and the file
-	//strtok();
+	char *check = ""; //Store the name of each directory in the path and the file
+	check = strtok(path, "/");
+	
+	/*EXPLICACION:
+	lo que intneto hacer es algo asi como, tu mirame que todos los directorios exsiten, y segun vamos encontrando
+	pues vamos mirando mas alla en el check. PEEEERO  que en caso de que TODO sea igual, de ahi el: pues si es igual pero se
+	acaba el path, significa que TODO EL PATH ES IGUAL por lo tanto ya existe y de ahi el -1. Pero a su vez hay que decir,
+	si el final del path no lo encuentra (es decir, el fichero) significa que no existe todavia y por lo tanto puede ser creado
+	pero con el loop este raro que me he montado pues si ve que algo no es igual salta error, y el if ese que esta medio empezado
+	de mierda significa que algo asi como si el siguiente en check es  NULL y no es igual (o sea, found = 0), significa que el file
+	no existe y puede ser creado. La cosa es que creo que es demasiado rebuscado no? en plan esto tiene que ser mas sencillo no me
+	jodas JAJAJJA y a parte que cada vez que hacemos un strtok(NULL, "/") ya se carga el char del path, asi q no puedo abusar tanto
+	de él (por no decir que solo hay que usarlo par ael while) porque jode rque me jodo el path y en una itneracion llega al NULL.
+	Me explico?? Porque joder vaya chapa te estoy metiendo compañero.
+	*/
+	/*
+	unsigned int found = 0;
+	while (check != NULL){
+		for (int i = 0; i < MAX_TOTAL_FILES; i++){
+			if(strcmp(check, sBlock.iNodo[i].name) == 0){
+				if(strtok(NULL, "/")==NULL){
+				//This means the file already exists.
+					return -1;
+				}
+				found = 1;
+			}
+			if(
+		}
+		if (found == 0){
+			reutrn -2;
+		}
+		check = strtok(NULL, "/");	
+	}
+	*/
 
 	return -2;
 }
