@@ -97,24 +97,16 @@ int createFile(char *path)
 	jodas JAJAJJA y a parte que cada vez que hacemos un strtok(NULL, "/") ya se carga el char del path, asi q no puedo abusar tanto
 	de él (por no decir que solo hay que usarlo par ael while) porque jode rque me jodo el path y en una itneracion llega al NULL.
 	Me explico?? Porque joder vaya chapa te estoy metiendo compañero.
+	namei compureba si un file o directory existe, en caso de que no, devuelve -1. Por eso uso esa funcion q ya tiene su loop y todo
+	en vez de usar mi propio loop.
 	*/
 	/*
 	unsigned int found = 0;
 	while (check != NULL){
-		for (int i = 0; i < MAX_TOTAL_FILES; i++){
-			if(strcmp(check, sBlock.iNodo[i].name) == 0){
-				if(strtok(NULL, "/")==NULL){
-				//This means the file already exists.
-					return -1;
-				}
-				found = 1;
-			}
-			if(
+		if(namei(check) < 0){
+			reuturn -2;
 		}
-		if (found == 0){
-			reutrn -2;
-		}
-		check = strtok(NULL, "/");	
+		check = strtok(NULL, "/");
 	}
 	*/
 
@@ -143,8 +135,11 @@ int openFile(char *path)
 	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
 		return -1;
 	}
-
-
+	
+	//Check if the path is a file or a directory
+	if(sBlock.iNodos[inode_i].isDirectory == DIR){
+		return -2;
+	}
 
 	//Check if the file is already open
 	if(sBlock.iNodos[inode_i].open == OPEN){
@@ -154,13 +149,10 @@ int openFile(char *path)
 	//Change the status of the file to OPEN
 	sBlock.iNodos[inode_i].open = OPEN;
 
-	/*
-	¿¿Habria que poner aqui un lseek al begin del file??
-
+	//Put the file pointer at the begining of the file
 	if(lseekFile(inode_i, 0, FS_SEEK_BEGIN)<0){
 		return -1;
 	}
-	*/
 
 	return inode_i;
 }
@@ -172,7 +164,12 @@ int openFile(char *path)
 int closeFile(int fileDescriptor)
 {
 	//Check if the file descriptor is valid
-	if(fileDescriptor < 0 || fileDescriptor > MAX_LOCAL_FILES-1){
+	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		return -1;
+	}
+	
+	//Check if the path is a file or a directory
+	if(sBlock.iNodos[inode_i].isDirectory == DIR){
 		return -1;
 	}
 
@@ -197,6 +194,12 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
 	}
+	
+	//Check if the path is a file or a directory
+	if(sBlock.iNodos[inode_i].isDirectory == DIR){
+		return -1;
+	}
+	
 	//Checck the file number of bytes
 	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
 		return -1;
@@ -231,6 +234,11 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
 	}
+	
+	//Check if the path is a file or a directory
+	if(sBlock.iNodos[inode_i].isDirectory == DIR){
+		return -1;
+	}
 
 	//Checck the file number of bytes
 	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
@@ -261,7 +269,14 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
 	}
-	if(offset > MAX_FILE_SIZE-1){
+	
+	//Check if the path is a file or a directory
+	if(sBlock.iNodos[inode_i].isDirectory == DIR){
+		return -1;
+	}
+	
+	//Check if the offset is bigger than the maximum file size. 
+	if((unsigned int)offset > MAX_FILE_SIZE-1){
 		return -1;
 	}
 
