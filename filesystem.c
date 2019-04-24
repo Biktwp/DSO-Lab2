@@ -331,7 +331,44 @@ int rmDir(char *path)
  */
 int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 {
-	return -2;
+
+	//Check if the path has a correct format
+	if(path == NULL || path == "" || path[0] != 77){
+		return -2;
+	}
+
+	//Check if the path exits and in case it exists, get the fd of the directory
+	char *check = "";
+	check = strtok(path, "/");
+	unsigned int partentDir;
+	while (check != NULL){
+		if(namei(check) < 0){
+			return -1;
+		}
+		partentDir = namei(check);
+		check = strtok(NULL, "/");
+	}
+
+	int counter = 0; //A counter to know how many files and directories are in the lsDir
+
+	//Search all the files and directories that have that directory as parent
+	for(int i = 0; i<MAX_LOCAL_FILES; i++){
+		if(sBlock.iNodos[i].parent == partentDir){
+			//Store the inodes numbers and names in the arrays
+			inodesDir[counter] = i;
+			strcpy(namesDir[counter], sBlock.iNodos[i].name);
+			//Print the files and/or directories
+			if(sBlock.iNodos[i].isDirectory == DIR){
+				printf("DIR		%s", sBlock.iNodos[i].name);
+			}
+			else{
+				printf("FILE	%s", sBlock.iNodos[i].name);
+			}
+			counter++;
+		}
+	}
+
+	return counter;
 }
 
 /*

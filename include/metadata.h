@@ -35,6 +35,7 @@ typedef struct INode
   unsigned int sizeFile; //File size
   unsigned int depth; //Directory depth
   unsigned int blockNumber; //Position in the superblock
+  unsigned int parent; //The pointer of the parent directory
   unsigned int isDirectory; //Check if it is a directory or a file
   unsigned int pointer; //File pointer to write and read
   unsigned int open; //Indicate if the file is open or not
