@@ -82,9 +82,6 @@ int createFile(char *path)
 	if(path == NULL || path == "" || path[0] != 77){
 		return -2;
 	}
-
-	char *check = ""; //Store the name of each directory in the path and the file
-	check = strtok(path, "/");
 	
 	/*EXPLICACION:
 	lo que intneto hacer es algo asi como, tu mirame que todos los directorios exsiten, y segun vamos encontrando
@@ -100,15 +97,17 @@ int createFile(char *path)
 	namei compureba si un file o directory existe, en caso de que no, devuelve -1. Por eso uso esa funcion q ya tiene su loop y todo
 	en vez de usar mi propio loop.
 	*/
-	/*
-	unsigned int found = 0;
+
+	char *check = ""; //Store the name of each directory in the path and the file
+	check = strtok(path, "/");
+	unsigned int parent;
 	while (check != NULL){
 		if(namei(check) < 0){
-			reuturn -2;
+			return -2;
 		}
+		parent = namei(check);
 		check = strtok(NULL, "/");
 	}
-	*/
 
 	return -2;
 }
@@ -128,10 +127,27 @@ int removeFile(char *path)
  */
 int openFile(char *path)
 {
-	//Get the i-node from the path name
-	int inode_i = namei(path);
 
-	//Check if the file exists
+	//Check if the path has a correct format
+	if(path == NULL || path == "" || path[0] != 77){
+		return -2;
+	}
+
+	//Check if the path exits and in case it exists, get the fd of the directory
+	char *check;
+	check = strtok(path, "/");
+	unsigned int inode_i;
+	while (check != NULL){
+		if(namei(check) < 0){
+			return -1;
+		}
+		//Copy the fd of the file, in case the next is NULL and everything before was true
+		//Means that this is our file and we need its file descriptor
+		inode_i = namei(check);
+		check = strtok(NULL, "/");
+	}
+
+	//Check if the file descriptor is correct
 	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
 		return -1;
 	}
@@ -163,6 +179,7 @@ int openFile(char *path)
  */
 int closeFile(int fileDescriptor)
 {
+
 	//Check if the file descriptor is valid
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
@@ -253,8 +270,6 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 	/*
 	i-node map??
 	*/
-
-	
 
 	return -1;
 }
