@@ -305,19 +305,11 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 	}
 	//Change the pointer to the begining of the file
 	if(whence == FS_SEEK_BEGIN){
-		//In case the offset is neggative, you cannot go less than 0 in a file
-		if(offset<0){
-			return -1;
-		}
-		sBlock.iNodos[fileDescriptor].pointer = 0 + offset;
+		sBlock.iNodos[fileDescriptor].pointer = 0;
 	}
 	//Change the pointer to the end of the file
 	if(whence == FS_SEEK_END){
-		//In case offset is possitive, you cannot go to the next document in a file
-		if(offset>0){
-			return -1;
-		}
-		sBlock.iNodos[fileDescriptor].pointer = (MAX_FILE_SIZE-1) + offset;
+		sBlock.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
 	}
 	return 0;
 }
