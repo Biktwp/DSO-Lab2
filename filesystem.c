@@ -72,42 +72,30 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
-	//Check if the file already exists
-	/*for(int i = 0; i < MAX_TOTAL_FILES; i++){
-		if(strcmp(sBlock.iNodos[i].name,path) == 0) return -1; 
-	}
-	*/
 
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77){
+	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
 		return -2;
 	}
 	
-	/*EXPLICACION:
-	lo que intneto hacer es algo asi como, tu mirame que todos los directorios exsiten, y segun vamos encontrando
-	pues vamos mirando mas alla en el check. PEEEERO  que en caso de que TODO sea igual, de ahi el: pues si es igual pero se
-	acaba el path, significa que TODO EL PATH ES IGUAL por lo tanto ya existe y de ahi el -1. Pero a su vez hay que decir,
-	si el final del path no lo encuentra (es decir, el fichero) significa que no existe todavia y por lo tanto puede ser creado
-	pero con el loop este raro que me he montado pues si ve que algo no es igual salta error, y el if ese que esta medio empezado
-	de mierda significa que algo asi como si el siguiente en check es  NULL y no es igual (o sea, found = 0), significa que el file
-	no existe y puede ser creado. La cosa es que creo que es demasiado rebuscado no? en plan esto tiene que ser mas sencillo no me
-	jodas JAJAJJA y a parte que cada vez que hacemos un strtok(NULL, "/") ya se carga el char del path, asi q no puedo abusar tanto
-	de él (por no decir que solo hay que usarlo par ael while) porque jode rque me jodo el path y en una itneracion llega al NULL.
-	Me explico?? Porque joder vaya chapa te estoy metiendo compañero.
-	namei compureba si un file o directory existe, en caso de que no, devuelve -1. Por eso uso esa funcion q ya tiene su loop y todo
-	en vez de usar mi propio loop.
-	*/
+	/*
+	Creo que tenemos que jugar un poco con el depth del directory para hayar la ultima posicion sin que pete
+	
 
 	char *check = ""; //Store the name of each directory in the path and the file
 	check = strtok(path, "/");
-	unsigned int parent;
+	unsigned int parent [3];
+	int i = 0;
 	while (check != NULL){
 		if(namei(check) < 0){
 			return -2;
 		}
-		parent = namei(check);
+		parent[i] = namei(check);
 		check = strtok(NULL, "/");
+		i++;
 	}
+
+	*/
 
 	return -2;
 }
@@ -129,7 +117,7 @@ int openFile(char *path)
 {
 
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77){
+	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
 		return -2;
 	}
 
@@ -340,7 +328,7 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 {
 
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77){
+	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>99){
 		return -2;
 	}
 
