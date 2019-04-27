@@ -40,7 +40,7 @@ int ialloc();
  * @return	return 0 in case od succes and -1 in case of error
  */
 
-int free(int block_id);
+int freeblock(int block_id);
 
 
 /*

@@ -11,7 +11,7 @@
 #include "include/metadata.h"   // Type and structure declaration of the file system
 #include <string.h>
 
-struct superBlock sBlock;
+struct superBlock1 sBlock;
 struct INode inodes [MAX_TOTAL_FILES];
 char InodeNames [MAX_TOTAL_FILES][MAX_NAME];
 char b_map[MAX_TOTAL_FILES];
@@ -26,7 +26,11 @@ int mkFS(long deviceSize)
 {
 	//Check the device size 
 	if (deviceSize < 51200 || deviceSize > 10485760) return -1;
-	
+
+	struct INode2 cosa;
+	struct superBlock2 cosa1;
+	printf("%ld,%ld, %ld\n",sizeof(superBlock1), sizeof(cosa1), sizeof(cosa));
+
 	//Restore the i-nodes map and the device size is store
 	sBlock.deviceSize = deviceSize;
 	//Esto no lo se muy bien, creo que me he tirado el triple y desaprovecho mazo recursos
@@ -34,7 +38,7 @@ int mkFS(long deviceSize)
 	sBlock.inodeMapNumBlocks = sBlock.numinodes;
 	sBlock.dataMapNumBlocks = sBlock.inodeMapNumBlocks;
 	sBlock.dataBlockNum = sBlock.dataMapNumBlocks;	
-
+/*
 	//Go through the i-node array and set it as default
 	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
 		strcpy(InodeNames[i],"");
@@ -44,7 +48,7 @@ int mkFS(long deviceSize)
 	
 	//Write metadata in disk
 	if(unmountFS() == -1) return -1;
-
+*/
 	return 0;
 	
 }
@@ -79,13 +83,13 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
-
+/*
 	//Check if the path has a correct format
 	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
 		return -2;
 	}
 	
-	/*
+	
 	Creo que tenemos que jugar un poco con el depth del directory para hayar la ultima posicion sin que pete
 	
 
@@ -131,7 +135,7 @@ int removeFile(char *path)
  */
 int openFile(char *path)
 {
-
+/*
 	//Check if the path has a correct format
 	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
 		return -2;
@@ -175,6 +179,8 @@ int openFile(char *path)
 	}
 
 	return inode_i;
+	*/
+	return -2;
 }
 
 /*
@@ -183,7 +189,7 @@ int openFile(char *path)
  */
 int closeFile(int fileDescriptor)
 {
-
+/*
 	//Check if the file descriptor is valid
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
@@ -201,8 +207,10 @@ int closeFile(int fileDescriptor)
 
 	//Close the file
 	sBlock.iNodos[fileDescriptor].open == CLOSE;
-
+*/
 	return 0;
+	
+
 }
 
 /*
@@ -210,7 +218,7 @@ int closeFile(int fileDescriptor)
  * @return	Number of bytes properly read, -1 in case of error.
  */
 int readFile(int fileDescriptor, void *buffer, int numBytes)
-{
+{/*
 	//Check if the file descriptor is valid
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
@@ -231,17 +239,17 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 		return -1;
 	}
 
-	/*
+	
 	No pillo de los i-node map
 	*/
-
+/*
 	//We create a Char block to read the chacters from the file
 	char block[BLOCK_SIZE];
 	//Get the image from the device and put the content in the buffer
 	bread(DEVICE_IMAGE, fileDescriptor, block);
 	//Reaf the bytes of the block and put them in the buffer
 	memmove(buffer, block, numBytes);
-
+*/
 	return numBytes;
 }
 
@@ -250,7 +258,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
  * @return	Number of bytes properly written, -1 in case of error.
  */
 int writeFile(int fileDescriptor, void *buffer, int numBytes)
-{
+{/*
 	//Check if the file descriptor is valid
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
@@ -271,7 +279,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 		return -1;
 	}
 
-	/*
+	
 	i-node map??
 	*/
 
@@ -283,7 +291,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
  * @return	0 if succes, -1 otherwise.
  */
 int lseekFile(int fileDescriptor, long offset, int whence)
-{
+{/*
 
 	//Check if the file descriptor is valid
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
@@ -316,6 +324,7 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 	if(whence == FS_SEEK_END){
 		sBlock.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
 	}
+	*/
 	return 0;
 }
 
@@ -343,7 +352,7 @@ int rmDir(char *path)
  */
 int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 {
-
+/*
 	//Check if the path has a correct format
 	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>99){
 		return -2;
@@ -381,6 +390,8 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 	}
 
 	return counter;
+	*/	
+return 2;
 }
 
 /*
@@ -405,8 +416,7 @@ int namei(char *fileName) {
 
 /*
  * b_map:
- * @brief	Translate
-logical address into physical address.
+ * @brief	Translatel ogical address into physical address.
  * @return	return 0 in case od succes and -1 in case of error
  */
 int bmap(int inode_id, int offset){
@@ -430,13 +440,13 @@ int alloc(void){
 	char block[BLOCK_SIZE];
 
 	for (int i = 0; i<sBlock.dataBlockNum; i++){
-		if(b_map[i] == 0){
+		//if(b_map[i] == 0){
 			//That block is not busy, now it will be
-			b_map[i];
+			//b_map[i];
 			memset(block, 0, BLOCK_SIZE);
 			bwrite(DEVICE_IMAGE, i+sBlock.firstDataBlock, block);
 			return i;
-		}
+		//}
 	}
 	return -1;
 }
@@ -467,7 +477,7 @@ int ialloc (void){
  * @return	return 0 in case od succes and -1 in case of error
  */
 
-int free(int block_id){
+int freeblock(int block_id){
 	//check if the id is valid
 	if(block_id >sBlock.dataBlockNum){
 		return -1;

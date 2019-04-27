@@ -35,15 +35,19 @@ typedef struct INode
   unsigned int sizeFile; //File size
   unsigned int depth; //Directory depth
   unsigned int blockNumber; //Position in the superblock
-  unsigned int parent; //The pointer of the parent directory
   unsigned int isDirectory; //Check if it is a directory or a file
-  unsigned int pointer; //File pointer to write and read
-  unsigned int open; //Indicate if the file is open or not
-  struct INode iNodes[MAX_LOCAL_FILES]; //An array of inodes in case we want to create a directory
 
 }INode;
 
-typedef struct superBlock
+typedef struct INode2
+{
+  unsigned int pointer; //File pointer to write and read
+  unsigned int open; //Indicate if the file is open or not
+  /* En los inodos directorio no hay un array de inodos sino que es un array de ints que almacenan las posiciones de los inodos en el superbloque.*/
+  unsigned int iNodes[MAX_LOCAL_FILES]; //An array of inodes in case we want to create a directory
+}INode2;
+
+typedef struct superBlock1
 {
   unsigned long deviceSize; //Size of the edevice
   unsigned int numinodes; //Number of total i-nodes
@@ -52,4 +56,10 @@ typedef struct superBlock
   unsigned int dataMapNumBlocks; //Number of data map blocks
   unsigned int firstDataBlock; //Number of the first data block
   struct INode iNodos[MAX_TOTAL_FILES]; //i-nodes array
-}superBlock;
+}superBlock1;
+
+typedef struct superBlock2
+{
+  struct INode2 iNodos[MAX_TOTAL_FILES]; //i-nodes array
+}superBlock2;
+
