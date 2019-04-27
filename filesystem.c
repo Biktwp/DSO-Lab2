@@ -12,8 +12,10 @@
 #include <string.h>
 
 struct superBlock sBlock;
-struct INode inodes;
+struct INode inodes [MAX_TOTAL_FILES];
 char InodeNames [MAX_TOTAL_FILES][MAX_NAME];
+char b_map[MAX_TOTAL_FILES];
+char imap[MAX_TOTAL_FILES];
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -27,6 +29,11 @@ int mkFS(long deviceSize)
 	
 	//Restore the i-nodes map and the device size is store
 	sBlock.deviceSize = deviceSize;
+	//Esto no lo se muy bien, creo que me he tirado el triple y desaprovecho mazo recursos
+	sBlock.numinodes = MAX_TOTAL_FILES;
+	sBlock.inodeMapNumBlocks = sBlock.numinodes;
+	sBlock.dataMapNumBlocks = sBlock.inodeMapNumBlocks;
+	sBlock.dataBlockNum = sBlock.dataMapNumBlocks;	
 
 	//Go through the i-node array and set it as default
 	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
@@ -84,15 +91,24 @@ int createFile(char *path)
 
 	char *check = ""; //Store the name of each directory in the path and the file
 	check = strtok(path, "/");
-	unsigned int parent [3];
+	unsigned int found = 0;
+	unsigned int parent;
 	int i = 0;
 	while (check != NULL){
 		if(namei(check) < 0){
+			found = 1;
+		}
+		else{
+			found = 0;
+		}
+		parent = namei(check);
+		check = strtok(NULL, "/");
+		if (check == NULL && found == 1){
+			return -1
+		}
+		else if (check != NULL && found == 0){
 			return -2;
 		}
-		parent[i] = namei(check);
-		check = strtok(NULL, "/");
-		i++;
 	}
 
 	*/
@@ -268,6 +284,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
  */
 int lseekFile(int fileDescriptor, long offset, int whence)
 {
+
 	//Check if the file descriptor is valid
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
 		return -1;
@@ -367,14 +384,16 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 }
 
 /*
-OUR FUNCTIONS
+LOW LEVEL FILE SYSTEM ALGORITHMS
 */
 
 /*
-namei: returns the file descriptor of a file from the path name
-*/
+ * namei
+ * @brief	returns the file descriptor of a file from the file name.
+ * @return	fd if success, -1 in case the file does not exists
+ */
 int namei(char *fileName) {
-	for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
+	for(int fd = 0; fd < sBlock.numinodes; fd++) {
 		//Loking for the file and retrun the number
 		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
 			return fd;
@@ -382,4 +401,96 @@ int namei(char *fileName) {
 	}
 	//In case it is not found
 	return -1;
+}
+
+/*
+ * b_map:
+ * @brief	Translate
+logical address into physical address.
+ * @return	return 0 in case od succes and -1 in case of error
+ */
+int bmap(int inode_id, int offset){
+	//check if the id is valid
+	if(inode_id > sBlock.numinodes){
+		return -1;
+	}
+	if(offset < BLOCK_SIZE){
+		//return inodes[inode_id].directBlock
+	}
+	return -1;
+}
+
+
+/*
+ * alloc:
+ * @brief	Allocate a free block for teh file
+ * @return	returns the block map position in case of succes and -1 in case of error
+ */
+int alloc(void){
+	char block[BLOCK_SIZE];
+
+	for (int i = 0; i<sBlock.dataBlockNum; i++){
+		if(b_map[i] == 0){
+			//That block is not busy, now it will be
+			b_map[i];
+			memset(block, 0, BLOCK_SIZE);
+			bwrite(DEVICE_IMAGE, i+sBlock.firstDataBlock, block);
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+/*
+ * ialloc:
+ * @brief	Allocate a free i-node for a file
+ * @return	returns the i-node map position in case of succes and -1 in case of error
+ */
+
+int ialloc (void){
+	//Look for a free i-node
+	for (int i =0; i<sBlock.numinodes; i++){
+		if (imap[i] == 0){
+			//free i-node found
+			imap[i] = 1;
+			memset(&(inodes[i]), 0, sizeof(INode));
+			return i;
+		}
+	}
+	return -1;
+}
+
+/*
+ * free:
+ * @brief	free an allocated block
+ * @return	return 0 in case od succes and -1 in case of error
+ */
+
+int free(int block_id){
+	//check if the id is valid
+	if(block_id >sBlock.dataBlockNum){
+		return -1;
+	}
+	//Free the block
+	b_map[block_id] = 0;
+
+	return 0;
+}
+
+/*
+ * ifree:
+ * @brief	free an allocated i-node
+ * @return	return 0 in case od succes and -1 in case of error
+ */
+
+int ifree(int inode_id){
+	//check if the id is valid
+	if(inode_id >sBlock.numinodes){
+		return -1;
+	}
+	//Free the i-node
+	imap[inode_id] = 0;
+
+	return 0;
 }
