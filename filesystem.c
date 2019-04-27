@@ -32,18 +32,29 @@ int mkFS(long deviceSize)
 	//Restore the i-nodes map and the device size is store
 	sBlock1.deviceSize = deviceSize;
 	sBlock1.firstDataBlock = 0;
+	strcpy(InodeNames[0],"root");
+	strcpy(sBlock1.iNodos[0].name,InodeNames[0]);
+	sBlock1.iNodos[0].sizeFile = BLOCK_SIZE;
+	sBlock1.iNodos[0].depth = 0;
+	sBlock1.iNodos[0].isDirectory = DIR;
+	sBlock1.iNodos[0].directBlock = 41;
+	sBlock2.iNodos[0].pointer = 0;
+	sBlock2.iNodos[0].open = OPEN;
+	for (int j = 0; j<MAX_LOCAL_FILES; j++){
+		sBlock2.iNodos[0].iNodes[j] = 41;
+	}
 	//Go through the i-node array and set it as default
-	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
+	for(unsigned i = 1; i < MAX_TOTAL_FILES; i++){
 		strcpy(InodeNames[i],"");
 		strcpy(sBlock1.iNodos[i].name,InodeNames[i]);
 		sBlock1.iNodos[i].sizeFile = 0;
-		sBlock1.iNodos[i].depth = NULL;
-		sBlock1.iNodos[i].isDirectory = NULL;
-		sBlock1.iNodos[i].directBlock = NULL;
-		sBlock2.iNodos[i].pointer = NULL;
+		sBlock1.iNodos[i].depth = 0;
+		sBlock1.iNodos[i].isDirectory = 2;
+		sBlock1.iNodos[i].directBlock = 41;
+		sBlock2.iNodos[i].pointer = 41;
 		sBlock2.iNodos[i].open = CLOSE;
 		for (int j = 0; j<MAX_LOCAL_FILES; j++){
-			sBlock2.iNodos[i].iNodes[j] = NULL;
+			sBlock2.iNodos[i].iNodes[j] = 41;
 		}
 	}
 
@@ -108,16 +119,15 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
-
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
+	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>132){
 		return -2;
 	}
 
 	//We check the path and get the file name in case it is correct and the file does not exist
 	char *check = ""; //Store the name of each directory in the path and the file
 	check = strtok(path, "/");
-	unsigned int found = 0, parent;
+	unsigned int found = 0, parent = 0;
 	char *new_name;
 	int i = 0;
 	while (check != NULL){
@@ -157,7 +167,7 @@ int createFile(char *path)
 
 	//Put the refenrece in the parent directory
 	for(i = 0; i<MAX_LOCAL_FILES; i++){
-		if(sBlock2.iNodos[parent].iNodes[i] != NULL) {
+		if(sBlock2.iNodos[parent].iNodes[i] == 41) {
 			sBlock2.iNodos[parent].iNodes[i]=fd;
 		}
 	}
@@ -167,7 +177,7 @@ int createFile(char *path)
 	strcpy(sBlock1.iNodos[fd].name, new_name);
 	sBlock1.iNodos[fd].directBlock = block_num;
 	sBlock2.iNodos[fd].open = OPEN;
-	fseek(fd, 0, FS_SEEK_BEGIN);
+	lseekFile(fd, 0, FS_SEEK_BEGIN);
 
 	return 0;
 }
@@ -179,21 +189,18 @@ int createFile(char *path)
 int removeFile(char *path)
 {
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
+	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47|| strlen(path)>132){
 		return -2;
 	}
 
 	//We check the path and get the file descriptor
 	char *check = ""; //Store the name of each directory in the path and the file
 	check = strtok(path, "/");
-	char *name;
 	int fd;
-	int i = 0;
 	while (check != NULL){
 		if(namei(check) < 0){
 			return -1;
 		}
-		name = check;
 		fd = namei(check);
 		check = strtok(NULL, "/");
 	}
@@ -205,14 +212,14 @@ int removeFile(char *path)
 
 	//free the block, the i-node and set te size to 0
 	freeblock(sBlock1.iNodos[fd].directBlock);
-	memset(sBlock1.iNodos[fd].sizeFile, 0, BLOCK_SIZE);
+	memset(&(sBlock1.iNodos[fd].sizeFile), 0, BLOCK_SIZE);
 	ifree(fd);
 
 	//Set to null the pointer in the parent directory
 	for(int i = 0; i<MAX_TOTAL_FILES; i++){
 		for(int j = 0; j < MAX_LOCAL_FILES; j++){
 			if(sBlock2.iNodos[i].iNodes[j] == fd){
-				sBlock2.iNodos[i].iNodes[j] = NULL;
+				sBlock2.iNodos[i].iNodes[j] = 41;
 			}
 		}
 	}
@@ -228,7 +235,7 @@ int openFile(char *path)
 {
 
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>132){
+	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>132){
 		return -2;
 	}
 
@@ -296,11 +303,10 @@ int closeFile(int fileDescriptor)
 	}
 
 	//Close the file
-	sBlock2.iNodos[fileDescriptor].open == CLOSE;
+	sBlock2.iNodos[fileDescriptor].open = CLOSE;
 
 	return 0;
 	
-
 }
 
 /*
@@ -330,20 +336,20 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 
 	//We create a Char block to read the chacters from the file
-	char block[BLOCK_SIZE];
-	int block_id;
+	//char block[BLOCK_SIZE];
+	//int block_id;
 
 	if(sBlock2.iNodos[fileDescriptor].pointer + numBytes > sBlock1.iNodos[fileDescriptor].sizeFile){
 		return -1;
 	}
 
-	block_id = bmap(fileDescriptor, sBlock2.iNodos[fileDescriptor].pointer);
+	//block_id = bmap(fileDescriptor, sBlock2.iNodos[fileDescriptor].pointer);
 
 	//Get the image from the device and poffsetut the content in the buffer
 	//bread(DEVICE_IMAGE, block_id, block);
 
 	//Read the bytes of the block and put them in the buffer
-	memmove(buffer, sBlock2.iNodos[fileDescriptor].pointer, numBytes);
+	//memmove(buffer, (const void*) sBlock2.iNodos[fileDescriptor].pointer, numBytes);
 
 	return numBytes;
 }
@@ -374,8 +380,8 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 		return -1;
 	}
 
-	char block [BLOCK_SIZE];
-	int block_id;
+	//char block [BLOCK_SIZE];
+	//int block_id;
 
 	if(sBlock2.iNodos[fileDescriptor].pointer + numBytes > sBlock1.iNodos[fileDescriptor].sizeFile){
 		return -1;
@@ -454,7 +460,7 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 {
 
 	//Check if the path has a correct format
-	if(path == NULL || path == "" || path[0] != 77 || strlen(path)>99){
+	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
 		return -2;
 	}
 
@@ -526,19 +532,20 @@ int bmap(int inode_id, int offset){
 		return -1;
 	}
 
-	int block[BLOCK_SIZE/4];
+//int block[BLOCK_SIZE/4];
 
 	//Find the data block
 	if(offset < BLOCK_SIZE){
 		return sBlock1.iNodos[inode_id].directBlock;
 	}
-
+/*
 	//No tengo ni idea de lo que hace aqui hulio, creo que es para directorios
 	if (offset < BLOCK_SIZE*BLOCK_SIZE/4){
 		bread(DEVICE_IMAGE, sBlock1.iNodos[inode_id].indirectBlock, block);
 		offset = (offset-BLOCK_SIZE) / BLOCK_SIZE;
 		return block[offset] ;
 	}
+*/
 
 	return -1;
 	
