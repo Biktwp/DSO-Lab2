@@ -53,9 +53,6 @@ int mkFS(long deviceSize)
 		sBlock1.iNodos[i].directBlock = 41;
 		sBlock2.iNodos[i].pointer = 41;
 		sBlock2.iNodos[i].open = CLOSE;
-		for (int j = 0; j<MAX_LOCAL_FILES; j++){
-			sBlock2.iNodos[i].iNodes[j] = 41;
-		}
 	}
 
 	//Write metadata in disk
@@ -440,7 +437,70 @@ int lseekFile(int fileDescriptor, long offset, int whence)
  */
 int mkDir(char *path)
 {
-	return -2;
+	//Check if the path has a correct format
+	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>132){
+		return -2;
+	}
+
+	//We check the path and get the direectory name in case it is correct and the new directory does not exist
+	char *check = ""; //Store the name of each directory in the path and the final one
+	check = strtok(path, "/");
+	unsigned int found = 0, parent = 0;
+	char *new_name;
+	int i = 0;
+	while (check != NULL){
+		if(namei(check) < 0){
+			found = 0;
+		}
+		else{
+			found = 1;
+			parent = namei(check);
+		}
+		new_name = check;
+		check = strtok(NULL, "/");
+		if (check == NULL && found == 1){
+			return -1;
+		}
+		else if (check != NULL && found == 0){
+			return -2;
+		}
+	}
+
+	//check the depth of the parent directory
+	if (sBlock1.iNodos[parent].depth >= MAX_DEPTH){
+		return -2;
+	}
+
+	//Get an empty file descriptor for the i-node
+	int fd = ialloc();
+	if(fd < 0){
+		return -2;
+	}
+
+	//Get an empty id for the new associeted block
+	int block_num = alloc();
+	if(block_num < 0){
+		ifree(fd);
+		return -2;
+	}
+
+	//Put the refenrece in the parent directory
+	for(i = 0; i<MAX_LOCAL_FILES; i++){
+		if(sBlock2.iNodos[parent].iNodes[i] == 41) {
+			sBlock2.iNodos[parent].iNodes[i]=fd;
+		}
+	}
+
+	//Default values of the new directory
+	sBlock1.iNodos[fd].isDirectory = DIR;
+	strcpy(sBlock1.iNodos[fd].name, new_name);
+	sBlock1.iNodos[fd].indirectBlock = block_num;
+
+	for (int j = 0; j<MAX_LOCAL_FILES; j++){
+		sBlock2.iNodos[fd].iNodes[j] = 41;
+	}
+
+	return 0;
 }
 
 /*
