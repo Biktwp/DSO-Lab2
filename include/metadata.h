@@ -35,6 +35,8 @@ typedef struct INode
   unsigned int sizeFile; //File size
   unsigned int depth; //Directory depth
   unsigned int isDirectory; //Check if it is a directory or a file
+  unsigned int directBlock; //Direct data block associeted with the inode
+  unsigned int indirectBlock; //Undirect data block associated
 
 }INode;
 
