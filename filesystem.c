@@ -11,11 +11,12 @@
 #include "include/metadata.h"   // Type and structure declaration of the file system
 #include <string.h>
 
-struct superBlock1 sBlock;
-struct INode inodes [MAX_TOTAL_FILES];
-char InodeNames [MAX_TOTAL_FILES][MAX_NAME];
-char b_map[MAX_TOTAL_FILES];
-char imap[MAX_TOTAL_FILES];
+
+struct superBlock1 sBlock1;
+struct superBlock2 sBlock2;
+char InodeNames[MAX_TOTAL_FILES][MAX_NAME];
+char b_map[MAX_TOTAL_FILES][1];
+char imap[MAX_TOTAL_FILES][1];
 
 /*
  * @brief 	Generates the proper file system structure in a storage device, as designed by the student.
@@ -26,25 +27,30 @@ int mkFS(long deviceSize)
 {
 	//Check the device size 
 	if (deviceSize < 51200 || deviceSize > 10485760) return -1;
-
-	struct INode2 cosa;
-	struct superBlock2 cosa1;
-	printf("%ld,%ld, %ld\n",sizeof(superBlock1), sizeof(cosa1), sizeof(cosa));
-
 	//Restore the i-nodes map and the device size is store
-	sBlock.deviceSize = deviceSize;
-	
-/*
+	sBlock1.deviceSize = deviceSize;
+	sBlock1.firstDataBlock = 0;
 	//Go through the i-node array and set it as default
 	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
 		strcpy(InodeNames[i],"");
-		strcpy(sBlock.iNodos[i].name, InodeNames[i]);
-		sBlock.iNodos[i].open = CLOSE;
+		strcpy(sBlock1.iNodos[i].name,InodeNames[i]);
+		sBlock1.iNodos[i].sizeFile = 0;
+		sBlock1.iNodos[i].depth = 0;
+		sBlock1.iNodos[i].isDirectory = 2;
+		sBlock2.iNodos[i].pointer = 0;
+		sBlock2.iNodos[i].open = CLOSE;
+		strcpy(b_map[i],"0");
+		strcpy(imap[i],"0");
 	}
+	strcpy(InodeNames[2],"CHINGO");
+	//bitmap_setbit(b_map,5,1);
+	strcpy(b_map[5],"1");
 	
+	printf("%s\n",b_map[5]);
+
 	//Write metadata in disk
 	if(unmountFS() == -1) return -1;
-*/
+
 	return 0;
 	
 }
@@ -55,9 +61,24 @@ int mkFS(long deviceSize)
  */
 int mountFS(void)
 {
+	unsigned int i;
 	//Read the metadata blocks from the disk
-	if(bread(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
-	if(bread(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
+	if(bread(DEVICE_IMAGE,0,((char*)(&(sBlock1)))) == -1) return -1;
+	if(bread(DEVICE_IMAGE,1,((char*)(&(sBlock2)))) == -1) return -1;
+
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bread(DEVICE_IMAGE,2,((char*) (&InodeNames))) == -1) return -1;
+	}
+
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bread(DEVICE_IMAGE,3,((char*) (&b_map))) == -1 ) return -1;
+	}
+
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bread(DEVICE_IMAGE,3,((char*) (&imap))) == -1 ) return -1;
+	}
+
+	printf("%s\n",b_map[5]);
 	return 0;
 }
 
@@ -67,9 +88,22 @@ int mountFS(void)
  */
 int unmountFS(void)
 {
+	unsigned int i;
 	//Write in the device the metadata blocks
-	if(bwrite(DEVICE_IMAGE,0,((char*)(&(sBlock))))== -1) return -1;
-	if(bwrite(DEVICE_IMAGE,1,((char*)(&(InodeNames))))==-1) return -1;
+	if(bwrite(DEVICE_IMAGE,0,((char*)(&(sBlock1)))) == -1) return -1;
+	if(bwrite(DEVICE_IMAGE,1,((char*)(&(sBlock2)))) == -1) return -1;
+	
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bwrite(DEVICE_IMAGE,2,((char*) (&InodeNames))) == -1) return -1;
+	}
+	
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bwrite(DEVICE_IMAGE,3,((char*) (&b_map))) == -1 ) return -1;
+	}
+
+	for(i = 0; i < MAX_TOTAL_FILES; i++){
+		if(bwrite(DEVICE_IMAGE,3,((char*) (&imap))) == -1 ) return -1;
+	}
 	return 0;
 }
 
@@ -157,17 +191,17 @@ int openFile(char *path)
 	}
 	
 	//Check if the path is a file or a directory
-	if(sBlock.iNodos[inode_i].isDirectory == DIR){
+	if(sBlock1.iNodos[inode_i].isDirectory == DIR){
 		return -2;
 	}
 
 	//Check if the file is already open
-	if(sBlock.iNodos[inode_i].open == OPEN){
+	if(sBlock1.iNodos[inode_i].open == OPEN){
 		return -2;
 	}
 
 	//Change the status of the file to OPEN
-	sBlock.iNodos[inode_i].open = OPEN;
+	sBlock1.iNodos[inode_i].open = OPEN;
 
 	//Put the file pointer at the begining of the file
 	if(lseekFile(inode_i, 0, FS_SEEK_BEGIN)<0){
@@ -192,17 +226,17 @@ int closeFile(int fileDescriptor)
 	}
 	
 	//Check if the path is a file or a directory
-	if(sBlock.iNodos[fileDescriptor].isDirectory == DIR){
+	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
 		return -1;
 	}
 
 	//Check if the file is already close
-	if(sBlock.iNodos[fileDescriptor].open == CLOSE){
+	if(sBlock1.iNodos[fileDescriptor].open == CLOSE){
 		return -1;
 	}
 
 	//Close the file
-	sBlock.iNodos[fileDescriptor].open == CLOSE;
+	sBlock1.iNodos[fileDescriptor].open == CLOSE;
 */
 	return 0;
 	
@@ -221,7 +255,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 	
 	//Check if the path is a file or a directory
-	if(sBlock.iNodos[fileDescriptor].isDirectory == DIR){
+	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
 		return -1;
 	}
 	
@@ -231,7 +265,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 
 	//Check if the file is open
-	if (sBlock.iNodos[fileDescriptor].open == CLOSE){
+	if (sBlock1.iNodos[fileDescriptor].open == CLOSE){
 		return -1;
 	}
 
@@ -261,7 +295,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 	
 	//Check if the path is a file or a directory
-	if(sBlock.iNodos[fileDescriptor].isDirectory == DIR){
+	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
 		return -1;
 	}
 
@@ -271,7 +305,7 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 
 	//Check if the file is open
-	if (sBlock.iNodos[fileDescriptor].open == CLOSE){
+	if (sBlock1.iNodos[fileDescriptor].open == CLOSE){
 		return -1;
 	}
 
@@ -295,7 +329,7 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 	}
 	
 	//Check if the path is a file or a directory
-	if(sBlock.iNodos[fileDescriptor].isDirectory == DIR){
+	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
 		return -1;
 	}
 	
@@ -307,18 +341,18 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 	//We need to check the whence number
 	//Change the pointer offset possitions from the current one
 	if(whence == FS_SEEK_CUR){
-		if(sBlock.iNodos[fileDescriptor].pointer + offset > MAX_FILE_SIZE-1 || sBlock.iNodos[fileDescriptor].pointer + offset < 0){
+		if(sBlock1.iNodos[fileDescriptor].pointer + offset > MAX_FILE_SIZE-1 || sBlock1.iNodos[fileDescriptor].pointer + offset < 0){
 			return -1;
 		}
-		sBlock.iNodos[fileDescriptor].pointer += offset;
+		sBlock1.iNodos[fileDescriptor].pointer += offset;
 	}
 	//Change the pointer to the begining of the file
 	if(whence == FS_SEEK_BEGIN){
-		sBlock.iNodos[fileDescriptor].pointer = 0;
+		sBlock1.iNodos[fileDescriptor].pointer = 0;
 	}
 	//Change the pointer to the end of the file
 	if(whence == FS_SEEK_END){
-		sBlock.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
+		sBlock1.iNodos[fileDescriptor].pointer = MAX_FILE_SIZE-1;
 	}
 	*/
 	return 0;
@@ -370,16 +404,16 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 
 	//Search all the files and directories that have that directory as parent
 	for(int i = 0; i<MAX_LOCAL_FILES; i++){
-		if(sBlock.iNodos[i].parent == partentDir){
+		if(sBlock1.iNodos[i].parent == partentDir){
 			//Store the inodes numbers and names in the arrays
 			inodesDir[counter] = i;
-			strcpy(namesDir[counter], sBlock.iNodos[i].name);
+			strcpy(namesDir[counter], sBlock1.iNodos[i].name);
 			//Print the files and/or directories
-			if(sBlock.iNodos[i].isDirectory == DIR){
-				printf("DIR		%s", sBlock.iNodos[i].name);
+			if(sBlock1.iNodos[i].isDirectory == DIR){
+				printf("DIR		%s", sBlock1.iNodos[i].name);
 			}
 			else{
-				printf("FILE	%s", sBlock.iNodos[i].name);
+				printf("FILE	%s", sBlock1.iNodos[i].name);
 			}
 			counter++;
 		}
@@ -402,7 +436,7 @@ LOW LEVEL FILE SYSTEM ALGORITHMS
 int namei(char *fileName) {
 	for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
 		//Loking for the file and retrun the number
-		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
+		if(strcmp(sBlock1.iNodos[fd].name, fileName) == 0) {
 			return fd;
 		}
 	}
@@ -416,6 +450,7 @@ int namei(char *fileName) {
  * @return	return 0 in case od succes and -1 in case of error
  */
 int bmap(int inode_id, int offset){
+	/*
 	//check if the id is valid
 	if(inode_id > MAX_TOTAL_FILES){
 		return -1;
@@ -423,6 +458,7 @@ int bmap(int inode_id, int offset){
 	if(offset < BLOCK_SIZE){
 		//return inodes[inode_id].directBlock
 	}
+	*/
 	return -1;
 }
 
@@ -433,6 +469,7 @@ int bmap(int inode_id, int offset){
  * @return	returns the block map position in case of succes and -1 in case of error
  */
 int alloc(void){
+	/**
 	char block[BLOCK_SIZE];
 
 	for (int i = 0; i<MAX_TOTAL_FILES; i++){
@@ -440,10 +477,10 @@ int alloc(void){
 			//That block is not busy, now it will be
 			//b_map[i];
 			memset(block, 0, BLOCK_SIZE);
-			bwrite(DEVICE_IMAGE, i+sBlock.firstDataBlock, block);
+			bwrite(DEVICE_IMAGE, i+sBlock1.firstDataBlock, block);
 			return i;
 		//}
-	}
+	}*/
 	return -1;
 }
 
@@ -455,15 +492,16 @@ int alloc(void){
  */
 
 int ialloc (void){
+	/*
 	//Look for a free i-node
 	for (int i =0; i<MAX_TOTAL_FILES; i++){
 		if (imap[i] == 0){
 			//free i-node found
 			imap[i] = 1;
-			memset(&(inodes[i]), 0, sizeof(INode));
+			//memset(&(inodes[i]), 0, sizeof(INode));
 			return i;
 		}
-	}
+	}*/
 	return -1;
 }
 
@@ -474,13 +512,14 @@ int ialloc (void){
  */
 
 int freeblock(int block_id){
+	/*
 	//check if the id is valid
 	if(block_id >MAX_TOTAL_FILES){
 		return -1;
 	}
 	//Free the block
 	b_map[block_id] = 0;
-
+	*/
 	return 0;
 }
 
@@ -491,12 +530,13 @@ int freeblock(int block_id){
  */
 
 int ifree(int inode_id){
+	/*
 	//check if the id is valid
 	if(inode_id >MAX_TOTAL_FILES){
 		return -1;
 	}
 	//Free the i-node
 	imap[inode_id] = 0;
-
+	*/
 	return 0;
 }

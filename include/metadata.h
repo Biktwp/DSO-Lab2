@@ -34,7 +34,6 @@ typedef struct INode
   char name[MAX_NAME]; //File Name
   unsigned int sizeFile; //File size
   unsigned int depth; //Directory depth
-  unsigned int blockNumber; //Position in the superblock
   unsigned int isDirectory; //Check if it is a directory or a file
 
 }INode;
