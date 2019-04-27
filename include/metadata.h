@@ -50,10 +50,6 @@ typedef struct INode2
 typedef struct superBlock1
 {
   unsigned long deviceSize; //Size of the edevice
-  unsigned int numinodes; //Number of total i-nodes
-  unsigned int dataBlockNum; //Number of data blocks
-  unsigned int inodeMapNumBlocks; //Number of i-node map blocks
-  unsigned int dataMapNumBlocks; //Number of data map blocks
   unsigned int firstDataBlock; //Number of the first data block
   struct INode iNodos[MAX_TOTAL_FILES]; //i-nodes array
 }superBlock1;

@@ -33,11 +33,7 @@ int mkFS(long deviceSize)
 
 	//Restore the i-nodes map and the device size is store
 	sBlock.deviceSize = deviceSize;
-	//Esto no lo se muy bien, creo que me he tirado el triple y desaprovecho mazo recursos
-	sBlock.numinodes = MAX_TOTAL_FILES;
-	sBlock.inodeMapNumBlocks = sBlock.numinodes;
-	sBlock.dataMapNumBlocks = sBlock.inodeMapNumBlocks;
-	sBlock.dataBlockNum = sBlock.dataMapNumBlocks;	
+	
 /*
 	//Go through the i-node array and set it as default
 	for(unsigned i = 0; i < MAX_TOTAL_FILES; i++){
@@ -404,7 +400,7 @@ LOW LEVEL FILE SYSTEM ALGORITHMS
  * @return	fd if success, -1 in case the file does not exists
  */
 int namei(char *fileName) {
-	for(int fd = 0; fd < sBlock.numinodes; fd++) {
+	for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
 		//Loking for the file and retrun the number
 		if(strcmp(sBlock.iNodos[fd].name, fileName) == 0) {
 			return fd;
@@ -421,7 +417,7 @@ int namei(char *fileName) {
  */
 int bmap(int inode_id, int offset){
 	//check if the id is valid
-	if(inode_id > sBlock.numinodes){
+	if(inode_id > MAX_TOTAL_FILES){
 		return -1;
 	}
 	if(offset < BLOCK_SIZE){
@@ -439,7 +435,7 @@ int bmap(int inode_id, int offset){
 int alloc(void){
 	char block[BLOCK_SIZE];
 
-	for (int i = 0; i<sBlock.dataBlockNum; i++){
+	for (int i = 0; i<MAX_TOTAL_FILES; i++){
 		//if(b_map[i] == 0){
 			//That block is not busy, now it will be
 			//b_map[i];
@@ -460,7 +456,7 @@ int alloc(void){
 
 int ialloc (void){
 	//Look for a free i-node
-	for (int i =0; i<sBlock.numinodes; i++){
+	for (int i =0; i<MAX_TOTAL_FILES; i++){
 		if (imap[i] == 0){
 			//free i-node found
 			imap[i] = 1;
@@ -479,7 +475,7 @@ int ialloc (void){
 
 int freeblock(int block_id){
 	//check if the id is valid
-	if(block_id >sBlock.dataBlockNum){
+	if(block_id >MAX_TOTAL_FILES){
 		return -1;
 	}
 	//Free the block
@@ -496,7 +492,7 @@ int freeblock(int block_id){
 
 int ifree(int inode_id){
 	//check if the id is valid
-	if(inode_id >sBlock.numinodes){
+	if(inode_id >MAX_TOTAL_FILES){
 		return -1;
 	}
 	//Free the i-node
