@@ -525,7 +525,57 @@ int mkDir(char *path)
  */
 int rmDir(char *path)
 {
-	return -2;
+
+	//Check if the path has a correct format
+	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
+		return -2;
+	}
+
+	unsigned int dir;
+	char aux[132];
+
+	if(strcmp(path,"/") != 0){
+	
+		strcpy(aux, path);
+		//We check the path and get the direcotry file descriptor
+		char *check = ""; //Store the name of each directory in the path and the file
+		check = strtok(aux, "/");
+		
+		while (check != NULL){
+			if(namei(check) < 0){
+				return -1;
+			}
+			dir = namei(check);
+			check = strtok(NULL, "/");
+		}
+	}
+
+	else{
+		printf("YOU ARE NOT ALLOWED TO DELETE ALL THE FILE SYSTEM !!!");
+		return 0;
+	}
+
+	if(sBlock1.iNodos[dir].isDirectory == FILE){
+		return -2;
+	}
+
+	for(int i = 0; i<MAX_LOCAL_FILES; i++){
+		if(sBlock2.iNodos[dir].iNodes[i] != 41){
+			if(sBlock1.iNodos[sBlock2.iNodos[dir].iNodes[i]].isDirectory == FILE){
+				sprintf(aux, "%s/%s", path, sBlock1.iNodos[sBlock2.iNodos[dir].iNodes[i]].name);
+				removeFile(aux);
+			}
+			else{
+				sprintf(aux, "%s/%s", path, sBlock1.iNodos[sBlock2.iNodos[dir].iNodes[i]].name);
+				rmDir(aux);
+			}
+		}
+	}
+
+	freeblock(dir);
+	ifree(dir);
+
+	return 0;
 }
 
 /*
@@ -582,6 +632,12 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 		}
 		
 	}
+
+	if(counter == 0){
+		printf("EMPTY DIRECTORY\n");
+	}
+
+	printf("%d FILES AND DIRECTORIES FOUND\n", counter);
 
 	return counter;
 
