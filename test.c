@@ -22,12 +22,13 @@
 
 int main()
 {
-	int ret, fd;
+	int ret;
+	//int fd;
 	int inodesDir[10];
 	char namesDir[10][33];
 
 	///////
-
+/*
 	ret = mkFS(DEV_SIZE);
 	if (ret != 0)
 	{
@@ -37,7 +38,7 @@ int main()
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST mkFS ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
 	///////
-
+*/
 	ret = mountFS();
 	if (ret != 0)
 	{
@@ -47,7 +48,7 @@ int main()
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST mountFS ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
 	///////
-
+/*
 	ret = createFile("/test.txt");
 	if (ret != 0)
 	{
@@ -127,8 +128,8 @@ int main()
 	fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST closeFile  - 2", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
 	///////
-
-	ret = lsDir("/cosa", inodesDir, namesDir);
+*/
+	ret = lsDir("/", inodesDir, namesDir);
 	if (ret < 0 || ret > MAX_LOCAL_FILES)
 	{
 		fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST lsDir ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);

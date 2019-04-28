@@ -540,19 +540,27 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 		return -2;
 	}
 
-	char aux[132];
-	strcpy(aux, path);
-
-	//We check the path and get the direcotry file descriptor
-	char *check = ""; //Store the name of each directory in the path and the file
-	check = strtok(aux, "/");
 	unsigned int parentDir;
-	while (check != NULL){
-		if(namei(check) < 0){
-			return -1;
+
+	if(strcmp(path,"/") != 0){
+
+		char aux[132];
+		strcpy(aux, path);
+		//We check the path and get the direcotry file descriptor
+		char *check = ""; //Store the name of each directory in the path and the file
+		check = strtok(aux, "/");
+		
+		while (check != NULL){
+			if(namei(check) < 0){
+				return -1;
+			}
+			parentDir = namei(check);
+			check = strtok(NULL, "/");
 		}
-		parentDir = namei(check);
-		check = strtok(NULL, "/");
+	}
+
+	else{
+		parentDir = 0;
 	}
 
 	int counter = 0; //A counter to know how many files and directories are in the lsDir
@@ -565,10 +573,10 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 			strcpy(namesDir[counter], sBlock1.iNodos[inodesDir[counter]].name);
 			//Print the files and/or directories
 			if(sBlock1.iNodos[inodesDir[counter]].isDirectory == DIR){
-				printf("DIR		%s\n", sBlock1.iNodos[inodesDir[counter]].name);	
+				printf("DIR    %s\n", sBlock1.iNodos[inodesDir[counter]].name);	
 			}
 			else{
-				printf("FILE	%s\n", sBlock1.iNodos[inodesDir[counter]].name);
+				printf("FILE   %s\n", sBlock1.iNodos[inodesDir[counter]].name);
 			}
 			counter++;
 		}
