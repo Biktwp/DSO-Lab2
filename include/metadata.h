@@ -18,7 +18,7 @@ static inline void bitmap_setbit(char *bitmap_, int i_, int val_) {
 #define MAX_TOTAL_FILES 40
 #define MAX_LOCAL_FILES 10
 #define MAX_NAME 32
-#define MAX_DEPTH 2
+#define MAX_DEPTH 3
 #define FILE_SIZE 2048
 #define BLOCK_SIZE 2048
 #define OPEN 1

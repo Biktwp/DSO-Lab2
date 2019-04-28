@@ -49,12 +49,6 @@ int mkFS(long deviceSize)
 	for(unsigned i = 1; i < MAX_TOTAL_FILES; i++){
 		strcpy(InodeNames[i],"");
 		strcpy(sBlock1.iNodos[i].name,InodeNames[i]);
-		sBlock1.iNodos[i].sizeFile = 0;
-		sBlock1.iNodos[i].depth = 0;
-		sBlock1.iNodos[i].isDirectory = 2;
-		sBlock1.iNodos[i].directBlock = 41;
-		sBlock2.iNodos[i].pointer = 41;
-		sBlock2.iNodos[i].open = CLOSE;
 	}
 
 	//Write metadata in disk
@@ -215,7 +209,7 @@ int removeFile(char *path)
 	if(fd < 0 || fd > MAX_TOTAL_FILES-1 || sBlock1.iNodos[fd].isDirectory == DIR){
 		return -2;
 	}
-
+	printf("DELETING FILE %s\n",path);
 	//free the block, the i-node and set te size to 0
 	freeblock(sBlock1.iNodos[fd].directBlock);
 	memset(&(sBlock1.iNodos[fd].sizeFile), 0, BLOCK_SIZE);
@@ -482,7 +476,7 @@ int mkDir(char *path)
 	}
 
 	//check the depth of the parent directory
-	if (sBlock1.iNodos[parent].depth >= MAX_DEPTH){
+	if (sBlock1.iNodos[parent].depth >= MAX_DEPTH -1){
 		return -2;
 	}
 
@@ -524,14 +518,14 @@ int mkDir(char *path)
  * @return	0 if success, -1 if the directory does not exist, -2 in case of error..
  */
 int rmDir(char *path)
-{
-
+{	
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
 		return -2;
 	}
 
 	unsigned int dir;
+	unsigned int i;
 	char aux[132];
 
 	if(strcmp(path,"/") != 0){
@@ -551,15 +545,17 @@ int rmDir(char *path)
 	}
 
 	else{
-		printf("YOU ARE NOT ALLOWED TO DELETE ALL THE FILE SYSTEM !!!");
+		printf("YOU ARE NOT ALLOWED TO DELETE ALL THE FILE SYSTEM !!!\n");
 		return 0;
 	}
 
 	if(sBlock1.iNodos[dir].isDirectory == FILE){
+		printf("IT IS NOT A DIRECTORY\n");
 		return -2;
 	}
 
-	for(int i = 0; i<MAX_LOCAL_FILES; i++){
+	for(i = 0; i<MAX_LOCAL_FILES; i++){
+	
 		if(sBlock2.iNodos[dir].iNodes[i] != 41){
 			if(sBlock1.iNodos[sBlock2.iNodos[dir].iNodes[i]].isDirectory == FILE){
 				sprintf(aux, "%s/%s", path, sBlock1.iNodos[sBlock2.iNodos[dir].iNodes[i]].name);
@@ -570,8 +566,21 @@ int rmDir(char *path)
 				rmDir(aux);
 			}
 		}
+		else
+		{
+			break;
+		}
 	}
-
+	printf("DELETING DIR %s\n",path);
+	for(i = 0; i < MAX_LOCAL_FILES; i++){
+		if(sBlock2.iNodos[dir].iNodes[i] != 41){
+			sBlock2.iNodos[dir].iNodes[i] = 41;
+		}
+		else
+		{
+			break;
+		}
+	}
 	freeblock(dir);
 	ifree(dir);
 
@@ -602,6 +611,7 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 		
 		while (check != NULL){
 			if(namei(check) < 0){
+				printf("NO SE HA ENCONTRADO %s\n",check);
 				return -1;
 			}
 			parentDir = namei(check);
@@ -625,8 +635,11 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 			if(sBlock1.iNodos[inodesDir[counter]].isDirectory == DIR){
 				printf("DIR    %s\n", sBlock1.iNodos[inodesDir[counter]].name);	
 			}
-			else{
+			else if(sBlock1.iNodos[inodesDir[counter]].isDirectory == FILE){
 				printf("FILE   %s\n", sBlock1.iNodos[inodesDir[counter]].name);
+			}
+			else{
+				break;
 			}
 			counter++;
 		}
@@ -752,7 +765,6 @@ int freeblock(int block_id){
 	}
 	//Free the block
 	b_map[block_id] = 0;
-	
 	return 0;
 }
 
@@ -770,6 +782,14 @@ int ifree(int inode_id){
 	}
 	//Free the i-node
 	i_map[inode_id] = 0;
+	strcpy(InodeNames[inode_id],"");
+	strcpy(sBlock1.iNodos[inode_id].name,"");
+	sBlock1.iNodos[inode_id].sizeFile = 0;
+	sBlock1.iNodos[inode_id].depth = 0;
+	sBlock1.iNodos[inode_id].isDirectory = 2;
+	sBlock1.iNodos[inode_id].directBlock = 41;
+	sBlock2.iNodos[inode_id].pointer = 41;
+	sBlock2.iNodos[inode_id].open = CLOSE;
 	
-	return 0;
+		return 0;
 }
