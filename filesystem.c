@@ -40,6 +40,8 @@ int mkFS(long deviceSize)
 	sBlock1.iNodos[0].directBlock = 41;
 	sBlock2.iNodos[0].pointer = 0;
 	sBlock2.iNodos[0].open = OPEN;
+	b_map[0] = 1;
+	i_map[0] = 1;
 	for (int j = 0; j<MAX_LOCAL_FILES; j++){
 		sBlock2.iNodos[0].iNodes[j] = 41;
 	}
@@ -121,12 +123,15 @@ int createFile(char *path)
 		return -2;
 	}
 
+	char aux[132];
+	strcpy(aux, path);
+
 	//We check the path and get the file name in case it is correct and the file does not exist
 	char *check = ""; //Store the name of each directory in the path and the file
-	check = strtok(path, "/");
+	check = strtok(aux, "/");
 	unsigned int found = 0, parent = 0;
 	char *new_name;
-	int i = 0;
+
 	while (check != NULL){
 		if(namei(check) < 0){
 			found = 0;
@@ -163,9 +168,10 @@ int createFile(char *path)
 	}
 
 	//Put the refenrece in the parent directory
-	for(i = 0; i<MAX_LOCAL_FILES; i++){
+	for(int i = 0; i<MAX_LOCAL_FILES; i++){
 		if(sBlock2.iNodos[parent].iNodes[i] == 41) {
 			sBlock2.iNodos[parent].iNodes[i]=fd;
+			break;
 		}
 	}
 
@@ -173,8 +179,8 @@ int createFile(char *path)
 	sBlock1.iNodos[fd].isDirectory = FILE;
 	strcpy(sBlock1.iNodos[fd].name, new_name);
 	sBlock1.iNodos[fd].directBlock = block_num;
-	sBlock2.iNodos[fd].open = OPEN;
-	lseekFile(fd, 0, FS_SEEK_BEGIN);
+	sBlock2.iNodos[fd].open = CLOSE;
+	sBlock1.iNodos[fd].depth = sBlock1.iNodos[parent].depth + 1;
 
 	return 0;
 }
@@ -190,9 +196,12 @@ int removeFile(char *path)
 		return -2;
 	}
 
+	char aux[132];
+	strcpy(aux, path);
+
 	//We check the path and get the file descriptor
 	char *check = ""; //Store the name of each directory in the path and the file
-	check = strtok(path, "/");
+	check = strtok(aux, "/");
 	int fd;
 	while (check != NULL){
 		if(namei(check) < 0){
@@ -221,7 +230,7 @@ int removeFile(char *path)
 		}
 	}
 
-	return -2;
+	return 0;
 }
 
 /*Break up" the device
@@ -236,9 +245,12 @@ int openFile(char *path)
 		return -2;
 	}
 
-	//Check if the path exits and in case it exists, get the fd of the directory
-	char *check;
-	check = strtok(path, "/");
+	char aux[132];
+	strcpy(aux, path);
+
+	//We check the path and get the file descriptor
+	char *check = ""; //Store the name of each directory in the path and the file
+	check = strtok(aux, "/");
 	unsigned int inode_i;
 	while (check != NULL){
 		if(namei(check) < 0){
@@ -333,20 +345,20 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	}
 
 	//We create a Char block to read the chacters from the file
-	//char block[BLOCK_SIZE];
-	//int block_id;
+	char block[BLOCK_SIZE];
+	int block_id;
 
 	if(sBlock2.iNodos[fileDescriptor].pointer + numBytes > sBlock1.iNodos[fileDescriptor].sizeFile){
 		return -1;
 	}
 
-	//block_id = bmap(fileDescriptor, sBlock2.iNodos[fileDescriptor].pointer);
+	block_id = bmap(fileDescriptor, sBlock2.iNodos[fileDescriptor].pointer);
 
 	//Get the image from the device and poffsetut the content in the buffer
-	//bread(DEVICE_IMAGE, block_id, block);
+	bread(DEVICE_IMAGE, block_id, block);
 
 	//Read the bytes of the block and put them in the buffer
-	//memmove(buffer, (const void*) sBlock2.iNodos[fileDescriptor].pointer, numBytes);
+	memmove(buffer, block, numBytes);
 
 	return numBytes;
 }
@@ -442,9 +454,12 @@ int mkDir(char *path)
 		return -2;
 	}
 
-	//We check the path and get the direectory name in case it is correct and the new directory does not exist
-	char *check = ""; //Store the name of each directory in the path and the final one
-	check = strtok(path, "/");
+	char aux[132];
+	strcpy(aux, path);
+
+	//We check the path and if the new directory already exits
+	char *check = ""; //Store the name of each directory in the path and the file
+	check = strtok(aux, "/");
 	unsigned int found = 0, parent = 0;
 	char *new_name;
 	int i = 0;
@@ -488,14 +503,15 @@ int mkDir(char *path)
 	for(i = 0; i<MAX_LOCAL_FILES; i++){
 		if(sBlock2.iNodos[parent].iNodes[i] == 41) {
 			sBlock2.iNodos[parent].iNodes[i]=fd;
+			break;
 		}
 	}
 
 	//Default values of the new directory
 	sBlock1.iNodos[fd].isDirectory = DIR;
 	strcpy(sBlock1.iNodos[fd].name, new_name);
-	sBlock1.iNodos[fd].indirectBlock = block_num;
-
+	sBlock2.iNodos[fd].indirectBlock = block_num;
+	sBlock1.iNodos[fd].depth = sBlock1.iNodos[parent].depth + 1;
 	for (int j = 0; j<MAX_LOCAL_FILES; j++){
 		sBlock2.iNodos[fd].iNodes[j] = 41;
 	}
@@ -524,15 +540,18 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 		return -2;
 	}
 
-	//Check if the path exits and in case it exists, get the fd of the directory
-	char *check = "";
-	check = strtok(path, "/");
-	unsigned int partentDir;
+	char aux[132];
+	strcpy(aux, path);
+
+	//We check the path and get the direcotry file descriptor
+	char *check = ""; //Store the name of each directory in the path and the file
+	check = strtok(aux, "/");
+	unsigned int parentDir;
 	while (check != NULL){
 		if(namei(check) < 0){
 			return -1;
 		}
-		partentDir = namei(check);
+		parentDir = namei(check);
 		check = strtok(NULL, "/");
 	}
 
@@ -540,18 +559,19 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 
 	//Search all the files and directories that have that directory as parent
 	for(int i = 0; i<MAX_LOCAL_FILES; i++){
-		
-		//Store the inodes numbers and names in the arrays
-		inodesDir[counter] = sBlock2.iNodos[partentDir].iNodes[i];
-		strcpy(namesDir[counter], sBlock1.iNodos[inodesDir[counter]].name);
-		//Print the files and/or directories
-		if(sBlock1.iNodos[inodesDir[counter]].isDirectory == DIR){
-			printf("DIR		%s", sBlock1.iNodos[inodesDir[counter]].name);
+		if(sBlock2.iNodos[parentDir].iNodes[i] != 41){
+			//Store the inodes numbers and names in the arrays
+			inodesDir[counter] = sBlock2.iNodos[parentDir].iNodes[i];
+			strcpy(namesDir[counter], sBlock1.iNodos[inodesDir[counter]].name);
+			//Print the files and/or directories
+			if(sBlock1.iNodos[inodesDir[counter]].isDirectory == DIR){
+				printf("DIR		%s\n", sBlock1.iNodos[inodesDir[counter]].name);	
+			}
+			else{
+				printf("FILE	%s\n", sBlock1.iNodos[inodesDir[counter]].name);
+			}
+			counter++;
 		}
-		else{
-			printf("FILE	%s", sBlock1.iNodos[inodesDir[counter]].name);
-		}
-		counter++;
 		
 	}
 

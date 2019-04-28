@@ -36,7 +36,6 @@ typedef struct INode
   unsigned int depth; //Directory depth
   unsigned int isDirectory; //Check if it is a directory or a file
   unsigned int directBlock; //Direct data block associeted with the inode
-  unsigned int indirectBlock; //Undirect data block associated
 
 }INode;
 
@@ -45,6 +44,7 @@ typedef struct INode2
   unsigned int pointer; //File pointer to write and read
   unsigned int open; //Indicate if the file is open or not
   /* En los inodos directorio no hay un array de inodos sino que es un array de ints que almacenan las posiciones de los inodos en el superbloque.*/
+  unsigned int indirectBlock; //Undirect data block associated
   unsigned int iNodes[MAX_LOCAL_FILES]; //An array of inodes in case we want to create a directory
 }INode2;
 
