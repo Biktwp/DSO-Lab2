@@ -235,21 +235,48 @@ int removeFile(char *path)
 		return -2;
 	}
 	
+	unsigned depth = 0;
 	char aux[132];
 	strcpy(aux, path);
 
 	//We check the path and get the file descriptor
 	char *check = ""; //Store the name of each directory in the path and the file
+	char *save = "";
 	check = strtok(aux, "/");
-	int fd;
 	while (check != NULL){
-		if(namei(check) < 0){
-			return -1;
+		if(depth == 0){
+			save = check;
+			printf("0 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL) strcpy(file,save);
+			else strcpy(directory1,save);
 		}
-		fd = namei(check);
-		check = strtok(NULL, "/");
+		else if (depth == 1)
+		{
+			save = check;
+			printf("1 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL) strcpy(file,save);
+			else strcpy(directory2,save);
+		}
+		else if (depth == 2)
+		{
+			save = check;
+			printf("2 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL)  strcpy(file,save);
+			else  strcpy(directory3,save);
+		}
+		else
+		{
+			printf("3 %s\n",check);
+			strcpy(file,check);
+			check = strtok(NULL, "/");
+		}
+		depth++;
 	}
 
+	int fd = existFile(depth,0);
 	//Check teh obtained file descriptor
 	if(fd < 0 || fd > MAX_TOTAL_FILES-1 || sBlock1.iNodos[fd].isDirectory == DIR){
 		return -2;
@@ -268,7 +295,7 @@ int removeFile(char *path)
 			}
 		}
 	}
-
+	namei();
 	return 0;
 }
 
@@ -284,22 +311,48 @@ int openFile(char *path)
 		return -2;
 	}
 
+	unsigned depth = 0;
 	char aux[132];
 	strcpy(aux, path);
 
 	//We check the path and get the file descriptor
 	char *check = ""; //Store the name of each directory in the path and the file
+	char *save = "";
 	check = strtok(aux, "/");
-	unsigned int inode_i;
 	while (check != NULL){
-		if(namei(check) < 0){
-			return -1;
+		if(depth == 0){
+			save = check;
+			printf("0 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL) strcpy(file,save);
+			else strcpy(directory1,save);
 		}
-		//Copy the fd of the file, in case the next is NULL and everything before was true
-		//Means that this is our file and we need its file descriptor
-		inode_i = namei(check);
-		check = strtok(NULL, "/");
+		else if (depth == 1)
+		{
+			save = check;
+			printf("1 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL) strcpy(file,save);
+			else strcpy(directory2,save);
+		}
+		else if (depth == 2)
+		{
+			save = check;
+			printf("2 %s\n",save);
+			check = strtok(NULL, "/");
+			if(check == NULL)  strcpy(file,save);
+			else  strcpy(directory3,save);
+		}
+		else
+		{
+			printf("3 %s\n",check);
+			strcpy(file,check);
+			check = strtok(NULL, "/");
+		}
+		depth++;
 	}
+
+	int inode_i = existFile(depth,0);
 
 	//Check if the file descriptor is correct
 	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
@@ -592,29 +645,41 @@ int rmDir(char *path)
 		return -2;
 	}
 
-	unsigned int dir;
-	unsigned int i;
+	unsigned int i = 0, depth = 0, dir = 0;
 	char aux[132];
 
 	if(strcmp(path,"/") != 0){
 	
 		strcpy(aux, path);
-		//We check the path and get the direcotry file descriptor
+		//We check the path and if the new directory already exits
 		char *check = ""; //Store the name of each directory in the path and the file
 		check = strtok(aux, "/");
-		
 		while (check != NULL){
-			if(namei(check) < 0){
-				return -1;
+			if(depth == 0){
+				strcpy(directory1,check);
 			}
-			dir = namei(check);
+			else if (depth == 1)
+			{
+				strcpy(directory2,check);
+			}
+			else
+			{
+				strcpy(directory3,check);
+			}
 			check = strtok(NULL, "/");
+			depth++;
 		}
 	}
 
 	else{
 		printf("YOU ARE NOT ALLOWED TO DELETE ALL THE FILE SYSTEM !!!\n");
 		return 0;
+	}
+
+	dir = existDir(depth,0);
+	printf("DIR %d\n",dir);
+	if(dir == -2){		
+		return -2;
 	}
 
 	if(sBlock1.iNodos[dir].isDirectory == FILE){
@@ -651,6 +716,7 @@ int rmDir(char *path)
 	}
 	freeblock(dir);
 	ifree(dir);
+	namei();
 
 	return 0;
 }
@@ -666,25 +732,33 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
 		return -2;
 	}
-
+	unsigned int depth = 0;
 	unsigned int parentDir;
 
 	if(strcmp(path,"/") != 0){
 
 		char aux[132];
 		strcpy(aux, path);
-		//We check the path and get the direcotry file descriptor
+
+		//We check the path and if the new directory already exits
 		char *check = ""; //Store the name of each directory in the path and the file
 		check = strtok(aux, "/");
-		
 		while (check != NULL){
-			if(namei(check) < 0){
-				printf("NO SE HA ENCONTRADO %s\n",check);
-				return -1;
+			if(depth == 0){
+				strcpy(directory1,check);
 			}
-			parentDir = namei(check);
+			else if (depth == 1)
+			{
+				strcpy(directory2,check);
+			}
+			else
+			{
+				strcpy(directory3,check);
+			}
 			check = strtok(NULL, "/");
+			depth++;
 		}
+		parentDir = existDir(depth,1);
 	}
 
 	else{
@@ -922,7 +996,7 @@ int existFile(int depth,int create){
 			//Loking for the file and retrun the number
 			if(strcmp(sBlock1.iNodos[fd].name, file) == 0 && sBlock1.iNodos[fd].depth == depth && strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,direct) == 0 ) {
 				printf("NO SE EXD\n");
-				return 0;
+				return fd;
 			}
 		}	
 		if(existDir(depth - 1,create)==-2){
