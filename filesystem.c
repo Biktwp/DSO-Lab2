@@ -33,9 +33,10 @@ char file[MAX_NAME];
 int mkFS(long deviceSize)
 {
 	//Check the device size 
-	printf("%ld %ld %ld\n",sizeof(superBlock2), sizeof(superBlock1), sizeof(superBlock3));
-
-	if (deviceSize < 51200 || deviceSize > 10485760) return -1;
+	if (deviceSize < 51200 || deviceSize > 10485760){ 
+		printf("ERROR: Invalid device size\n"); 
+		return -1;
+		}
 	//Restore the i-nodes map and the device size is store
 	sBlock1.deviceSize = deviceSize;
 	sBlock1.firstDataBlock = 0;
@@ -60,8 +61,10 @@ int mkFS(long deviceSize)
 	}
 
 	//Write metadata in disk
-	if(unmountFS() == -1) return -1;
-
+	if(unmountFS() == -1){
+		printf("ERROR: Cannot unmount the file system"); 
+		return -1;
+	}
 	return 0;
 	
 }
@@ -122,9 +125,9 @@ int unmountFS(void)
  */
 int createFile(char *path)
 {
-	printf("%s\n",path);
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>132){
+		printf("ERROR: Invalid path\n");
 		return -2;
 	}
 
@@ -137,9 +140,12 @@ int createFile(char *path)
 	char *save = "";
 	check = strtok(aux, "/");
 	while (check != NULL){
+		if(strlen(check)>32){
+			printf("ERROR: Max directory or file name is 32\n"); 
+			return -2;
+		}
 		if(depth == 0){
 			save = check;
-			printf("0 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory1,save);
@@ -147,7 +153,6 @@ int createFile(char *path)
 		else if (depth == 1)
 		{
 			save = check;
-			printf("1 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory2,save);
@@ -155,32 +160,27 @@ int createFile(char *path)
 		else if (depth == 2)
 		{
 			save = check;
-			printf("2 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL)  strcpy(file,save);
 			else  strcpy(directory3,save);
 		}
 		else
 		{
-			printf("3 %s\n",check);
 			strcpy(file,check);
 			check = strtok(NULL, "/");
 		}
 		depth++;
 	}
-	printf("d1 %s d2 %s d3 %s f %s\n",directory1,directory2,directory3,file);
-
-	
-
+	if(strcmp(directory1,"") && depth == 1) strcpy(directory1,"root");	
 	if (depth - 1 > MAX_DEPTH){
+		printf("ERROR: The depth of the file system is 3\n");
 		return -2;
 	}
 
 	int ret = existFile(depth,1);
-	printf("RESULTADO %d\n",ret);
 	if(ret != -1){
-		printf("FALLA\n");
-		return -2;
+		printf("ERROR: The path does not exist\n");
+		return -1;
 	}
 
 	unsigned int  parent = 0;
@@ -193,6 +193,7 @@ int createFile(char *path)
 	//Get an empty file descriptor for the i-node
 	int fd = ialloc();
 	if(fd < 0){
+		printf("ERROR: Max number of files and directories is 40\n");
 		return -2;
 	}
 
@@ -203,7 +204,6 @@ int createFile(char *path)
 		return -2;
 	}
 
-	printf("%d %s\n",fd,file);
 	//Put the refenrece in the parent directory
 	for(int i = 0; i<MAX_LOCAL_FILES; i++){
 		if(sBlock2.iNodos[parent].iNodes[i] == 41) {
@@ -220,7 +220,6 @@ int createFile(char *path)
 	sBlock3.iNodos[fd].open = CLOSE;
 	sBlock1.iNodos[fd].depth = depth;
 	sBlock3.iNodos[fd].parent = parent;
-	namei();
 	return 0;
 }
 
@@ -232,6 +231,7 @@ int removeFile(char *path)
 {
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47|| strlen(path)>132){
+		printf("ERROR: Invalid path\n");
 		return -2;
 	}
 	
@@ -244,9 +244,12 @@ int removeFile(char *path)
 	char *save = "";
 	check = strtok(aux, "/");
 	while (check != NULL){
+		if(strlen(check)>32){
+			printf("ERROR: Max directory or file name is 32\n"); 
+			return -2;
+		}
 		if(depth == 0){
 			save = check;
-			printf("0 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory1,save);
@@ -254,7 +257,6 @@ int removeFile(char *path)
 		else if (depth == 1)
 		{
 			save = check;
-			printf("1 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory2,save);
@@ -262,14 +264,12 @@ int removeFile(char *path)
 		else if (depth == 2)
 		{
 			save = check;
-			printf("2 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL)  strcpy(file,save);
 			else  strcpy(directory3,save);
 		}
 		else
 		{
-			printf("3 %s\n",check);
 			strcpy(file,check);
 			check = strtok(NULL, "/");
 		}
@@ -278,10 +278,14 @@ int removeFile(char *path)
 
 	int fd = existFile(depth,0);
 	//Check teh obtained file descriptor
-	if(fd < 0 || fd > MAX_TOTAL_FILES-1 || sBlock1.iNodos[fd].isDirectory == DIR){
+	if(fd < 0){
+		printf("ERROR: File not found\n");
+		return -1;
+	}
+	if(fd > MAX_TOTAL_FILES-1 || sBlock1.iNodos[fd].isDirectory == DIR){
+		printf("ERROR: %s is a directory\n",file);
 		return -2;
 	}
-	printf("DELETING FILE %s\n",path);
 	//free the block, the i-node and set te size to 0
 	freeblock(sBlock1.iNodos[fd].directBlock);
 	memset(&(sBlock1.iNodos[fd].sizeFile), 0, BLOCK_SIZE);
@@ -295,7 +299,7 @@ int removeFile(char *path)
 			}
 		}
 	}
-	namei();
+	printf("FILE %s DELETED\n",path);
 	return 0;
 }
 
@@ -308,6 +312,7 @@ int openFile(char *path)
 
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>132){
+		printf("ERROR: Invalid path\n");
 		return -2;
 	}
 
@@ -320,9 +325,13 @@ int openFile(char *path)
 	char *save = "";
 	check = strtok(aux, "/");
 	while (check != NULL){
+		if(strlen(check)>32){
+			printf("ERROR: Max directory or file name is 32\n"); 
+			return -2;
+		}
+			
 		if(depth == 0){
 			save = check;
-			printf("0 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory1,save);
@@ -330,7 +339,6 @@ int openFile(char *path)
 		else if (depth == 1)
 		{
 			save = check;
-			printf("1 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
 			else strcpy(directory2,save);
@@ -338,14 +346,12 @@ int openFile(char *path)
 		else if (depth == 2)
 		{
 			save = check;
-			printf("2 %s\n",save);
 			check = strtok(NULL, "/");
 			if(check == NULL)  strcpy(file,save);
 			else  strcpy(directory3,save);
 		}
 		else
 		{
-			printf("3 %s\n",check);
 			strcpy(file,check);
 			check = strtok(NULL, "/");
 		}
@@ -356,17 +362,20 @@ int openFile(char *path)
 
 	//Check if the file descriptor is correct
 	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
+		printf("ERROR: Invalid file\n");
 		return -1;
 	}
 	
 	//Check if the path is a file or a directory
 	if(sBlock1.iNodos[inode_i].isDirectory == DIR){
+		printf("ERROR: Invalid file\n");
 		return -2;
 	}
 
 	//Check if the file is already open
 	if(sBlock3.iNodos[inode_i].open == OPEN){
-		return -2;
+		printf("ERROR: File already open\n");
+		return inode_i;
 	}
 
 	//Change the status of the file to OPEN
@@ -374,7 +383,7 @@ int openFile(char *path)
 
 	//Put the file pointer at the begining of the file
 	if(lseekFile(inode_i, 0, FS_SEEK_BEGIN)<0){
-		return -1;
+		return -2;
 	}
 
 	return inode_i;
@@ -390,17 +399,20 @@ int closeFile(int fileDescriptor)
 
 	//Check if the file descriptor is valid
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		printf("ERROR: Invalid file\n");
 		return -1;
 	}
 	
 	//Check if the path is a file or a directory
 	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
+		printf("ERROR: It is a directory\n");
 		return -1;
 	}
 
 	//Check if the file is already close
 	if(sBlock3.iNodos[fileDescriptor].open == CLOSE){
-		return -1;
+		printf("ERROR: The file is already close\n");
+		return 0;
 	}
 
 	//Close the file
@@ -418,21 +430,25 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 {
 	//Check if the file descriptor is valid
 	if(fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		printf("ERROR: Invalid file descriptor\n");
 		return -1;
 	}
 	
 	//Check if the path is a file or a directory
 	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
+		printf("ERROR: It is a directory\n");
 		return -1;
 	}
 	
-	//Checck the file number of bytes
+	//Check the file number of bytes
 	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
+		printf("ERROR: Invalid number of bytes\n");
 		return -1;
 	}
 
 	//Check if the file is open
 	if (sBlock3.iNodos[fileDescriptor].open == CLOSE){
+		printf("ERROR: The file is closed\n");
 		return -1;
 	}
 
@@ -441,6 +457,7 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	int block_id;
 
 	if(sBlock2.iNodos[fileDescriptor].pointer + numBytes > sBlock1.iNodos[fileDescriptor].sizeFile){
+		printf("ERROR: Max file size 2048 bytes\n");
 		return -1;
 	}
 
@@ -450,7 +467,6 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 	if(bread(DEVICE_IMAGE, block_id, block)==-1)return -1;
 
 	//Read the bytes of the block and put them in the buffer
-	printf("LO QUE SE DEBERIA DE HABER LEIDO %s\n",block);
 	memmove(buffer, block, numBytes);
 	return numBytes;
 }
@@ -463,34 +479,36 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 {
 	//Check if the file descriptor is valid
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		printf("ERROR: Invalid file descriptor\n");
 		return -1;
 	}
 	
 	//Check if the path is a file or a directory
 	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
+		printf("ERROR: It is a directory\n");
 		return -1;
 	}
 
 	//Checck the write number of bytes
 	if (numBytes < 0 || numBytes > MAX_FILE_SIZE){
+		printf("ERROR: Invalid number of bytes\n");
 		return -1;
 	}
 
 	//Check if the file is open
 	if (sBlock3.iNodos[fileDescriptor].open == CLOSE){
+		printf("ERROR: The file is closed\n");
 		return -1;
 	}
 
 	if(sBlock2.iNodos[fileDescriptor].pointer + numBytes > sBlock1.iNodos[fileDescriptor].sizeFile){
+		printf("ERROR: Max file size 2048 bytes\n");
 		return -1;
 	}
 
 	//Se escribe en un bloque el buffer que almacena lo que se desa escribir
 	char block[BLOCK_SIZE];
 	memmove(block, buffer, numBytes);
-
-	printf("LO QUE SE DEBERIA DE HABER ESCRITO %s\n",block);
-
 	//Se invoca a la función bwrite para guardar en memoria el bloque a escribir. Si la ejecución es errónea devuelve error.
 	if (bwrite(DEVICE_IMAGE, sBlock1.iNodos[fileDescriptor].directBlock, block) == -1) return -1;
 	return numBytes;
@@ -505,16 +523,19 @@ int lseekFile(int fileDescriptor, long offset, int whence)
 
 	//Check if the file descriptor is valid
 	if (fileDescriptor < 0 || fileDescriptor > MAX_TOTAL_FILES-1){
+		printf("ERROR: Invalid file descriptor\n");
 		return -1;
 	}
 	
 	//Check if the path is a file or a directory
 	if(sBlock1.iNodos[fileDescriptor].isDirectory == DIR){
+		printf("ERROR: It is a directory\n");
 		return -1;
 	}
 	
 	//Check if the offset is bigger than the maximum file size. 
 	if((unsigned int)offset > MAX_FILE_SIZE-1){
+		printf("ERROR: Invalid offset\n");
 		return -1;
 	}
 
@@ -544,9 +565,9 @@ int lseekFile(int fileDescriptor, long offset, int whence)
  */
 int mkDir(char *path)
 {
-	printf("%s\n",path);
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47 || strlen(path)>99){
+		printf("ERROR: Invalid path\n");
 		return -2;
 	}
 
@@ -558,6 +579,10 @@ int mkDir(char *path)
 	char *check = ""; //Store the name of each directory in the path and the file
 	check = strtok(aux, "/");
 	while (check != NULL){
+		if(strlen(check)>32){
+			printf("ERROR: Max directory or file name is 32\n"); 
+			return -2;
+		} 
 		if(depth == 0){
 			strcpy(directory1,check);
 		}
@@ -572,22 +597,26 @@ int mkDir(char *path)
 		check = strtok(NULL, "/");
 		depth++;
 	}
-	//printf("%d\n",depth);
-	//check the depth of the parent directory
+
 	if ( depth > MAX_DEPTH){
+		printf("ERROR: The depth of the file system is 3\n");
 		return -2;
 	}
 
 	int ret = existDir(depth,1);
-	printf("RESULTADO %d\n",ret);
-	if(ret <= -2 || ret >= 0){
-		printf("FALLA\n");
+	if(ret <= -2){
+		printf("ERROR: The path does not exist\n");
 		return -2;
+	}
+	if(ret >= 0){
+		printf("ERROR: The directory already exist\n");
+		return -1;
 	}
 
 	//Get an empty file descriptor for the i-node
 	int fd = ialloc();
 	if(fd < 0){
+		printf("ERROR: Max number of files and directories is 40\n");
 		return -2;
 	}
 
@@ -630,7 +659,6 @@ int mkDir(char *path)
 	for (int j = 0; j<MAX_LOCAL_FILES; j++){
 		sBlock2.iNodos[fd].iNodes[j] = 41;
 	}
-	namei();
 	return 0;
 }
 
@@ -642,6 +670,7 @@ int rmDir(char *path)
 {	
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
+		printf("ERROR: Invalid path\n");		
 		return -2;
 	}
 
@@ -655,6 +684,10 @@ int rmDir(char *path)
 		char *check = ""; //Store the name of each directory in the path and the file
 		check = strtok(aux, "/");
 		while (check != NULL){
+			if(strlen(check)>32){
+				printf("ERROR: Max directory or file name is 32\n"); 
+				return -2;
+			}
 			if(depth == 0){
 				strcpy(directory1,check);
 			}
@@ -676,10 +709,16 @@ int rmDir(char *path)
 		return 0;
 	}
 
-	dir = existDir(depth,0);
-	printf("DIR %d\n",dir);
-	if(dir == -2){		
+	if (depth - 1 > MAX_DEPTH){
+		printf("ERROR: The depth of the file system is 3\n");
 		return -2;
+	}
+
+	dir = existDir(depth,0);
+	
+	if(dir == -2){	
+		printf("ERROR: The path does not exist\n");	
+		return -1;
 	}
 
 	if(sBlock1.iNodos[dir].isDirectory == FILE){
@@ -704,7 +743,7 @@ int rmDir(char *path)
 			break;
 		}
 	}
-	printf("DELETING DIR %s\n",path);
+	printf("DIR %s DELETED\n",path);
 	for(i = 0; i < MAX_LOCAL_FILES; i++){
 		if(sBlock2.iNodos[dir].iNodes[i] != 41){
 			sBlock2.iNodos[dir].iNodes[i] = 41;
@@ -716,8 +755,6 @@ int rmDir(char *path)
 	}
 	freeblock(dir);
 	ifree(dir);
-	namei();
-
 	return 0;
 }
 
@@ -730,6 +767,7 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path,"") == 0 || path[0] != 47|| strlen(path)>99){
+		printf("ERROR: Invalid path\n");
 		return -2;
 	}
 	unsigned int depth = 0;
@@ -744,6 +782,10 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 		char *check = ""; //Store the name of each directory in the path and the file
 		check = strtok(aux, "/");
 		while (check != NULL){
+			if(strlen(check)>32){
+				printf("ERROR: Max directory or file name is 32\n"); 
+				return -2;
+			}
 			if(depth == 0){
 				strcpy(directory1,check);
 			}
@@ -758,13 +800,16 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 			check = strtok(NULL, "/");
 			depth++;
 		}
-		parentDir = existDir(depth,1);
+		parentDir = existDir(depth,0);
 	}
 
 	else{
 		parentDir = 0;
+	} 
+	if(parentDir == -2){
+		printf("ERROR: The path does not exist\n");
+		return -1;
 	}
-
 	int counter = 0; //A counter to know how many files and directories are in the lsDir
 
 	//Search all the files and directories that have that directory as parent
@@ -776,14 +821,12 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 			//Print the files and/or directories
 			if(sBlock1.iNodos[inodesDir[counter]].isDirectory == DIR){
 				printf("DIR    %s\n", sBlock1.iNodos[inodesDir[counter]].name);	
+				counter++;
 			}
 			else if(sBlock1.iNodos[inodesDir[counter]].isDirectory == FILE){
 				printf("FILE   %s\n", sBlock1.iNodos[inodesDir[counter]].name);
+				counter++;
 			}
-			else{
-				break;
-			}
-			counter++;
 		}
 		
 	}
@@ -793,7 +836,6 @@ int lsDir(char *path, int inodesDir[10], char namesDir[10][33])
 	}
 
 	printf("%d FILES AND DIRECTORIES FOUND\n", counter);
-
 	return counter;
 
 }
@@ -803,17 +845,19 @@ LOW LEVEL FILE SYSTEM ALGORITHMS
 */
 
 /*
+BORRRAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAR
  * namei
  * @brief	returns the file descriptor of a file from the file name.
  * @return	fd if success, -1 in case the file does not exists
  */
 int namei() {
-	for(int fd = 0; fd <10; fd++) {
+	for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
 		//Loking for the file and retrun the number
-		printf("%s %d %d\n",sBlock1.iNodos[fd].name,sBlock3.iNodos[fd].parent, fd);
-		if(sBlock1.iNodos[fd].directBlock == 41) {
-			return fd;
-		}	
+		printf("%d %s", fd ,sBlock1.iNodos[fd].name);
+		//if(sBlock1.iNodos[fd].directBlock == 41) {
+		//	return fd;
+		//}	
+			printf("\n");
 	}
 	//In case it is not found
 	return -1;
@@ -937,7 +981,6 @@ int ifree(int inode_id){
 	return 0;
 }
 
-//a/b/c depth = 3
 int existDir(int depth,int create){
 	int i = depth, j = -2, save = -1,auxiliar = -1;
 	for(;i > 0; i--){
@@ -967,67 +1010,31 @@ int existDir(int depth,int create){
 				break;
 			}
 			
-		}
-		printf("AUXILIAR %d\n",auxiliar);
-		printf("j == %d\n",j);	
+		}	
 		if(create == 1 && depth == i && j <= -2) j = -1, save = 0;
 		if(create == 1 && depth != i && j == -1) j = -2, save = -2;
-		printf("j == %d\n",j);
 	}
 	if(save== 0 && create == 1 && j != -2) j = -1;
 	if(save == -2 && create == 1 && j != -2) j = -2;
 	if(auxiliar != -1 && create != 1) j = auxiliar;
-	printf("RETURN == %d\n",j);
 	return j;
 }	
 
 int existFile(int depth,int create){
-	printf("DEPTH %d\n",depth);
 	char *direct;
 	if(depth -1 == 0) direct = "root";
 	else if (depth-1 == 1) direct = directory1;
 	else if (depth-1 == 2) direct = directory2;
 	else direct  = directory3;
-	printf("DIRECTORIO %s\n",direct);
-		
-	//int j = 0;
-	printf("LOKOOOOOOOOOO %d\n",existDir(depth - 1,create));
-		for(int fd = 0; fd < 10; fd++) {
+		for(int fd = 0; fd < MAX_TOTAL_FILES; fd++) {
 			//Loking for the file and retrun the number
 			if(strcmp(sBlock1.iNodos[fd].name, file) == 0 && sBlock1.iNodos[fd].depth == depth && strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,direct) == 0 ) {
-				printf("NO SE EXD\n");
 				return fd;
 			}
 		}	
 		if(existDir(depth - 1,create)==-2){
+			if(depth - 1 == 0)return -1;
 			return 0;
 		}
 	return -1;
-
-	/*if(strcmp(sBlock1.iNodos[fd].name, file) == 0){
-				if( sBlock1.iNodos[fd].depth == 1 ){
-					if(strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,directory3) == 0 ) {
-						printf("NO SE EXD\n");
-						return 0;
-					}
-				}
-			}
-			if(strcmp(sBlock1.iNodos[fd].name, file) == 0 && sBlock1.iNodos[fd].depth == depth && strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,direct) == 0 ) {
-				printf("NO SE EXD\n");
-				return 0;
-			}
-			
-	printf("f %s b %s\n",file,sBlock1.iNodos[fd].name);
-			if(strcmp(sBlock1.iNodos[fd].name, file) == 0){
-				printf("PASO1\n");
-				printf("1 f %d b %d\n",depth,sBlock1.iNodos[fd].depth);
-				if( sBlock1.iNodos[fd].depth == depth){
-					printf("PASO2\n");
-					printf("2 f %s b %s\n",directory3,sBlock1.iNodos[sBlock3.iNodos[fd].parent].name);
-					if(strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,direct) == 0 ) {
-						printf("NO SE EXD\n");
-						return 0;
-					}
-				}
-			}*/
 }
