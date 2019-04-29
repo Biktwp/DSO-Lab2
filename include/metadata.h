@@ -27,7 +27,12 @@ static inline void bitmap_setbit(char *bitmap_, int i_, int val_) {
 #define DIR 1
 
 struct INode;
-struct superBlock;
+struct INode2;
+struct INode3;
+struct superBlock1;
+struct superBlock2;
+struct superBlock3;
+
 
 typedef struct INode
 {
@@ -42,11 +47,16 @@ typedef struct INode
 typedef struct INode2
 {
   unsigned int pointer; //File pointer to write and read
-  unsigned int open; //Indicate if the file is open or not
   /* En los inodos directorio no hay un array de inodos sino que es un array de ints que almacenan las posiciones de los inodos en el superbloque.*/
   unsigned int indirectBlock; //Undirect data block associated
   unsigned int iNodes[MAX_LOCAL_FILES]; //An array of inodes in case we want to create a directory
 }INode2;
+
+typedef struct INode3
+{
+  unsigned int parent; //Pointer to the directblock of the parent
+  unsigned int open; //Indicate if the file is open or not
+}INode3;
 
 typedef struct superBlock1
 {
@@ -59,4 +69,10 @@ typedef struct superBlock2
 {
   struct INode2 iNodos[MAX_TOTAL_FILES]; //i-nodes array
 }superBlock2;
+
+typedef struct superBlock3
+{
+  struct INode3 iNodos[MAX_TOTAL_FILES];
+}superBlock3;
+
 

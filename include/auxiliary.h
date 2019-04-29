@@ -11,7 +11,7 @@
  * @brief	returns the file descriptor of a file from the file name.
  * @return	fd if success, -1 in case the file does not exists
  */
-int  namei(char *fielName);
+int  namei();
 
 /*
  * b_map:
@@ -49,3 +49,7 @@ int freeblock(int block_id);
  * @return	return 0 in case od succes and -1 in case of error
  */
 int ifree(int inode_id);
+
+int existDir(int depth, int create);
+
+int existFile(int depth, int create);
