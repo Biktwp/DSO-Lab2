@@ -87,9 +87,7 @@ int mountFS(void)
 	if (bread(DEVICE_IMAGE, 4, ((char *)b_map)) == -1) return -1;
 
 	// read the inode names from disk
-	for(int i = 0; i < MAX_TOTAL_FILES; i++){
-		if(bread(DEVICE_IMAGE,5,((char*) (&InodeNames))) == -1) return -1;
-	}
+	if(bread(DEVICE_IMAGE,5,((char*) (&InodeNames))) == -1) return -1;
 
 	return 0;
 }
@@ -465,9 +463,17 @@ int readFile(int fileDescriptor, void *buffer, int numBytes)
 
 	//Get the image from the device and poffsetut the content in the buffer
 	if(bread(DEVICE_IMAGE, block_id, block)==-1)return -1;
+	//create an auxiliar block to copy only the bytes from the i-node pointer
+	char blockAux[BLOCK_SIZE];
 
+	for(int i = 0; i<numBytes; i++){
+		blockAux[i]=block[i+sBlock2.iNodos[fileDescriptor].pointer];
+	}
 	//Read the bytes of the block and put them in the buffer
-	memmove(buffer, block, numBytes);
+	memmove(buffer, blockAux, numBytes);
+
+	lseekFile(fileDescriptor, numBytes, FS_SEEK_CUR);
+	
 	return numBytes;
 }
 
@@ -508,9 +514,27 @@ int writeFile(int fileDescriptor, void *buffer, int numBytes)
 
 	//Se escribe en un bloque el buffer que almacena lo que se desa escribir
 	char block[BLOCK_SIZE];
-	memmove(block, buffer, numBytes);
-	//Se invoca a la función bwrite para guardar en memoria el bloque a escribir. Si la ejecución es errónea devuelve error.
-	if (bwrite(DEVICE_IMAGE, sBlock1.iNodos[fileDescriptor].directBlock, block) == -1) return -1;
+	unsigned int block_num;
+
+	block_num = bmap(fileDescriptor, sBlock2.iNodos[fileDescriptor].pointer);
+
+	//create an auxiliar block to copy only the bytes from the i-node pointer
+	char blockAux[BLOCK_SIZE];
+
+	if (bread(DEVICE_IMAGE, block_num, block) == -1) return -1;
+
+	//Read the bytes of the buffer and put them in the aux. block
+	memmove(blockAux, buffer, BLOCK_SIZE);
+	
+	for(int i = 0; i<numBytes; i++){
+		block[i+sBlock2.iNodos[fileDescriptor].pointer] = blockAux[i];
+	}
+
+	//Write the written buffer in the memory
+	if (bwrite(DEVICE_IMAGE, block_num, block) == -1) return -1;
+
+	lseekFile(fileDescriptor, numBytes, FS_SEEK_CUR);
+
 	return numBytes;
 }
 
@@ -876,20 +900,10 @@ int bmap(int inode_id, int offset){
 		return -1;
 	}
 
-//int block[BLOCK_SIZE/4];
-
 	//Find the data block
 	if(offset < BLOCK_SIZE){
-		return sBlock1.iNodos[inode_id].directBlock;
+		return sBlock1.iNodos[inode_id].directBlock + 5;
 	}
-/*
-	//No tengo ni idea de lo que hace aqui hulio, creo que es para directorios
-	if (offset < BLOCK_SIZE*BLOCK_SIZE/4){
-		bread(DEVICE_IMAGE, sBlock1.iNodos[inode_id].indirectBlock, block);
-		offset = (offset-BLOCK_SIZE) / BLOCK_SIZE;
-		return block[offset] ;
-	}
-*/
 
 	return -1;
 	
