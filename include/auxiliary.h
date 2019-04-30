@@ -6,12 +6,6 @@
  * @date	01/03/2017
  */
 
-/*
- * namei
- * @brief	returns the file descriptor of a file from the file name.
- * @return	fd if success, -1 in case the file does not exists
- */
-int  namei();
 
 /*
  * b_map:
@@ -50,6 +44,16 @@ int freeblock(int block_id);
  */
 int ifree(int inode_id);
 
+/*
+ * existDir
+ * @brief	returns the file descriptor of a directory from the directory name.
+ * @return	fd if success, -1 in case the directory does not exists
+ */
 int existDir(int depth);
 
+/*
+ * existFile
+ * @brief	returns the file descriptor of a file from the file name.
+ * @return	fd if success, -1 in case the directory does not exists
+ */
 int existFile(int depth);

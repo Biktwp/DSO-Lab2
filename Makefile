@@ -15,7 +15,6 @@ all: create_disk test
 
 test: $(LIB)
 	$(CC) $(CFLAGS) -o test test.c libfs.a
-	$(CC) $(CFLAGS) -o advanced_test advanced_test.c libfs.a
 
 advanced_test: 
 
