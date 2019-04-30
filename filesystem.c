@@ -133,13 +133,11 @@ int createFile(char *path)
 
 	unsigned depth = 0;
 	char aux[132];
-	char aux1[33];
 	strcpy(aux, path);
 	strcpy(file,"");
 	strcpy(directory1,"");
 	strcpy(directory2,"");
 	strcpy(directory3,"");
-	strcpy(aux1,"");
 
 	//We check the path and if the new directory already exits
 	char *check = ""; //Store the name of each directory in the path and the file
@@ -154,8 +152,7 @@ int createFile(char *path)
 			save = check;
 			check = strtok(NULL, "/");
 			if(check == NULL) strcpy(file,save);
-			else strcpy(aux1,save);
-			printf("DIRECTORIO %s\n",directory1);
+			else strcpy(directory1,save);
 		}
 		else if (depth == 1)
 		{
@@ -178,7 +175,7 @@ int createFile(char *path)
 		}
 		depth++;
 	}
-	strcpy(directory1,aux1);
+
 	printf("%s %ld %s %s\n",directory1,strlen(directory3),directory2,directory3);
 	if(existFile(depth-1) > 0){
 		printf("ERROR: Cannot create a file in a file\n");
@@ -248,6 +245,7 @@ int createFile(char *path)
  */
 int removeFile(char *path)
 {
+	printf("MIRA YO\n");
 	//Check if the path has a correct format
 	if(path == NULL || strcmp(path, "") == 0 || path[0] != 47|| strlen(path)>132){
 		printf("ERROR: Invalid path\n");
@@ -309,6 +307,7 @@ int removeFile(char *path)
 		printf("ERROR: %s is a directory\n",file);
 		return -2;
 	}
+	printf("%d\n",fd);
 	//free the block, the i-node and set te size to 0
 	freeblock(sBlock1.iNodos[fd].directBlock);
 	sBlock1.iNodos[fd].sizeFile = 0;
@@ -378,8 +377,8 @@ int openFile(char *path)
 		depth++;
 	}
 
-	int inode_i = existFile(depth);
-
+	int inode_i = existFile(depth -1 );
+	printf("Inode %d\n",inode_i);
 	//Check if the file descriptor is correct
 	if(inode_i < 0 || inode_i > MAX_TOTAL_FILES-1){
 		printf("ERROR: Invalid file\n");
@@ -790,7 +789,7 @@ int rmDir(char *path)
 
 	dir = existDir(depth);
 	
-	if(dir == -2){	
+	if(dir == -1){	
 		printf("ERROR: The path does not exist\n");	
 		return -1;
 	}
@@ -1060,22 +1059,23 @@ int ifree(int inode_id){
 
 int existDir(int depth){
 	int aux = -2;
+	if(depth == 0) return 0;
 	//printf("depth %d\n",depth);
 	for(int fd = 0; fd <MAX_TOTAL_FILES; fd++) {
 		//Loking for the file and retrun the number
-		printf("parent %s d1 %s\n ",sBlock1.iNodos[fd].name, directory1);
+		//printf("parent %s d1 %s\n ",sBlock1.iNodos[fd].name, directory1);
 		if(strcmp(sBlock1.iNodos[fd].name, directory1) == 0 && strcmp(sBlock1.iNodos[sBlock3.iNodos[fd].parent].name,"root") == 0 && sBlock1.iNodos[fd].isDirectory == DIR) {
 			if(depth >= 2){
 				for(int i = 0; i < MAX_LOCAL_FILES; i++){
 					int n1 = sBlock2.iNodos[fd].iNodes[i];
 					//printf("%d\n",n1);
-					printf("parent %s d2 %s %d\n ",sBlock1.iNodos[n1].name,directory2, n1);
+					//printf("parent %s d2 %s %d\n ",sBlock1.iNodos[n1].name,directory2, n1);
 					if(strcmp(sBlock1.iNodos[n1].name,directory2) == 0 && sBlock1.iNodos[n1].isDirectory == DIR){
 						if(depth >= 3){
 							for(int j = 0; j < MAX_LOCAL_FILES; j++){
 								int n2 = sBlock2.iNodos[n1].iNodes[j];
 								//printf("%d\n",n2);
-								printf("parent %s d3 %s \n ",sBlock1.iNodos[n2].name,directory3);
+								//printf("parent %s d3 %s \n ",sBlock1.iNodos[n2].name,directory3);
 								if(strcmp(sBlock1.iNodos[n2].name,directory3) == 0 && sBlock1.iNodos[n2].isDirectory == DIR){
 									return n2;
 								}	
@@ -1136,16 +1136,22 @@ int existDir(int depth){
 
 int existFile(int depth){
 	//namei();
-	int aux = existDir(depth-1);
+	int aux = existDir(depth);
+	if(depth == 0){
+		aux = 0;
+	}
 	if(aux == -1){
 		return -1;
 	} 
-	if(strcmp(file,"")==0)return -1;
+	if(strcmp(file,"")==0){
+		return -1;
+	}
 	for(int i = 0; i < MAX_LOCAL_FILES;i++){
 		int n1 = sBlock2.iNodos[aux].iNodes[i];
-		//printf("%d %s\n",n1,sBlock1.iNodos[n1].name);
+		printf("%d %s\n",n1,sBlock1.iNodos[n1].name);
 		if(strcmp(sBlock1.iNodos[n1].name,file) == 0 && sBlock1.iNodos[n1].isDirectory == FILE) return n1;
 	}
+	if(aux == 0) return 0;
 	return -1;
 	/*
 	if(strcmp(file,"")==0)return -1;

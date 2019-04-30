@@ -184,23 +184,23 @@ int main()
 	 * Test 13: Create a directory with 32 characters in its name depth 0.
 	 * Expected: Create the directory successfully.
 	 */
-	ret = mkDir("/01234567890123456789012345678901");
-	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 13 creating a 32 name directory depth 0 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 13 creating a 32 name directory depth 0 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	ret = mkDir("/012345678901234567890123456789");
+	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 13 creating a 30 name directory depth 0 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 13 creating a 30 name directory depth 0 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
 	/*
 	 * Test 14: Create a directory with 32 characters in its name depth 1.
 	 * Expected: Create the directory successfully.
 	 */
-	ret = mkDir("/01234567890123456789012345678901/01234567890123456789012345678901");
-	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 14 creating a 32 name directory depth 1 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
-	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 14 creating a 32 name directory depth 1 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
+	ret = mkDir("/012345678901234567890123456789/012345678901234567890123456789");
+	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 14 creating a 30 name directory depth 1 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
+	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 14 creating a 30 name directory depth 1 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
 	/*
 	 * Test 15: Create a directory with 32 characters in its name depth 2.
 	 * Expected: Create the directory successfully.
 	 */
-	ret = mkDir("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901");
+	ret = mkDir("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789");
 	if (ret != 0)fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 15 creating a 32 name directory depth 2 99 length path ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 15 creating a 32 name directory depth 2 and 99 length path ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 	
@@ -216,7 +216,7 @@ int main()
 	 * Test 17: Create a file with a name of 32 characters and depth 3.
 	 * Expected: Create the file.
 	 */
-	ret = createFile("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901/012345678901234567890123456789.t");
+	ret = createFile("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123.t");
 	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 17 creating a 32 name file depth 3 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 17 creating a 32 name file depth 3 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
@@ -224,7 +224,7 @@ int main()
 	 * Test 18: Creating a file with a path with a lenght of 132.
 	 * Expected: Create the file.
 	 */
-	ret = createFile("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901/012345678901234567890123456789.e");
+	ret = createFile("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123.e");
 	if (ret != 0)fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 18 creating a file with a path with a lenght of 132 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 18 creating a file with a path with a lenght of 132 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 	
@@ -240,7 +240,7 @@ int main()
 	 * Test 20: Removing a file with a name of 32 characters and depth 3.
 	 * Expected: Remove the file.
 	 */
-	ret = removeFile("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901/012345678901234567890123456789.t");
+	ret = removeFile("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123.t");
 	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 20 removing a file of 32 name length and depth 3 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 20 removing a file of 32 name length and depth 3 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 	 
@@ -248,7 +248,7 @@ int main()
 	 * Test 21: Removing a file with a path of length equal 132.
 	 * Expected: Remove the file.
 	 */
-	ret = removeFile("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901/012345678901234567890123456789.e");
+	ret = removeFile("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123.e");
 	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 21 removing a file with path length 132 depth 3 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 21 removing a file with path length 132 depth 3 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
@@ -256,7 +256,7 @@ int main()
 	 * Test 22: Removing a directory with a path of length equal 99.
 	 * Expected: Remove the directory.
 	 */
-	ret = rmDir("/01234567890123456789012345678901/01234567890123456789012345678901/01234567890123456789012345678901");
+	ret = rmDir("/012345678901234567890123456789/012345678901234567890123456789/012345678901234567890123456789");
 	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 22 removing a directory with path length 99 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 22 removing a directory with path length 99 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
@@ -264,7 +264,7 @@ int main()
 	 * Test 23: Removing a directory with a name of 32 character.
 	 * Expected: Remove the directory.
 	 */
-	ret = rmDir("/01234567890123456789012345678901");
+	ret = rmDir("/012345678901234567890123456789");
 	if (ret != 0) fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 23 removing a directory with length name 32 ", ANSI_COLOR_RED, "FAILED\n", ANSI_COLOR_RESET);
 	else fprintf(stdout, "%s%s%s%s%s", ANSI_COLOR_BLUE, "TEST 23 removing a directory with length name 32 ", ANSI_COLOR_GREEN, "SUCCESS\n", ANSI_COLOR_RESET);
 
