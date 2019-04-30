@@ -50,6 +50,6 @@ int freeblock(int block_id);
  */
 int ifree(int inode_id);
 
-int existDir(int depth, int create);
+int existDir(int depth);
 
-int existFile(int depth, int create);
+int existFile(int depth);
